@@ -27,7 +27,7 @@ const DB_FILE = path.join(process.cwd(), "database.json");
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // Simple Reversible Encryption for Policy Numbers
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "medyaan_insure_track_secret_1234"; // 32 chars limit or simple algorithm
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "veloai_insure_track_secret_1234"; // 32 chars limit or simple algorithm
 // We will use standard AES-256-CTR or a simpler robust hex-shifting representation to ensure absolute stability in Node.js
 function encrypt(text: string): string {
   try {
@@ -82,12 +82,12 @@ function ensureDatabase() {
   ];
 
   const users = [
-    { id: "user_rev", email: "reviewer@medyaan.com", role: "team1_reviewer", client_id: null, name: "Prasad Preetham (Reviewer)", created_at: new Date().toISOString() },
-    { id: "user_ver", email: "verifier@medyaan.com", role: "team2_verifier", client_id: null, name: "Sarah Connor (Verifier)", created_at: new Date().toISOString() },
-    { id: "user_ops", email: "ops_admin@medyaan.com", role: "ops_admin", client_id: null, name: "John Doe (Ops Admin)", created_at: new Date().toISOString() },
-    { id: "user_super", email: "super_admin@medyaan.com", role: "super_admin", client_id: null, name: "Admin (Super)", created_at: new Date().toISOString() },
-    { id: "user_client_apc", email: "apc_viewer@medyaan.com", role: "client_viewer", client_id: "client_apc", name: "Dr. James Carter (APC)", created_at: new Date().toISOString() },
-    { id: "user_client_mhg", email: "mhg_viewer@medyaan.com", role: "client_viewer", client_id: "client_mhg", name: "Jane Smith (MHG)", created_at: new Date().toISOString() }
+    { id: "user_rev", email: "reviewer@veloai.com", role: "team1_reviewer", client_id: null, name: "Prasad Preetham (Reviewer)", created_at: new Date().toISOString() },
+    { id: "user_ver", email: "verifier@veloai.com", role: "team2_verifier", client_id: null, name: "Sarah Connor (Verifier)", created_at: new Date().toISOString() },
+    { id: "user_ops", email: "ops_admin@veloai.com", role: "ops_admin", client_id: null, name: "John Doe (Ops Admin)", created_at: new Date().toISOString() },
+    { id: "user_super", email: "super_admin@veloai.com", role: "super_admin", client_id: null, name: "Admin (Super)", created_at: new Date().toISOString() },
+    { id: "user_client_apc", email: "apc_viewer@veloai.com", role: "client_viewer", client_id: "client_apc", name: "Dr. James Carter (APC)", created_at: new Date().toISOString() },
+    { id: "user_client_mhg", email: "mhg_viewer@veloai.com", role: "client_viewer", client_id: "client_mhg", name: "Jane Smith (MHG)", created_at: new Date().toISOString() }
   ];
 
   const import_batches = [
@@ -387,7 +387,7 @@ function ensureDatabase() {
     {
       id: "audit_init",
       user_id: "user_super",
-      user_email: "super_admin@medyaan.com",
+      user_email: "super_admin@veloai.com",
       client_id: null,
       action: "SYSTEM_INITIALIZED",
       record_id: "system",
@@ -544,7 +544,7 @@ function runUserAccessMigration() {
         user.is_global = true;
         writeAuditLog(
           "system",
-          "system@medyaan.com",
+          "system@veloai.com",
           null,
           "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
           user.id,
@@ -746,7 +746,7 @@ app.get("/api/test-rls", (req, res) => {
   });
 
   // Test case 2: client_viewer (for client_apc) querying patients (should only see patients belonging to client_apc)
-  const apcViewer = db.users.find((u: any) => u.email === "apc_viewer@medyaan.com");
+  const apcViewer = db.users.find((u: any) => u.email === "apc_viewer@veloai.com");
   const apcPatients = applyRls(db, apcViewer, "patients", db.patients);
   const expectedApcCount = db.patients.filter((p: any) => p.client_id === "client_apc").length;
   results.push({
@@ -954,7 +954,7 @@ app.post("/api/import-batches/commit", (req, res) => {
   const user = (req as any).user;
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
-  const { client_id, filename, rows, headers, field_mapping } = req.body;
+  const { client_id, filename, rows, headers, field_mapping, rowDecisions } = req.body;
   if (!client_id || !filename || !rows || !Array.isArray(rows)) {
     return res.status(400).json({ error: "client_id, filename, and rows array are required." });
   }
@@ -965,13 +965,16 @@ app.post("/api/import-batches/commit", (req, res) => {
     return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
   }
 
+  const decisions = rowDecisions || {};
+  const rowsToCommit = rows.filter((_, index) => decisions[index] !== "skip");
+
   const batchId = "batch_" + Math.random().toString(36).substring(2, 11);
   const newBatch = {
     id: batchId,
     client_id,
     uploaded_by: user.id,
     filename,
-    record_count: rows.length,
+    record_count: rowsToCommit.length,
     status: "completed" as const,
     created_at: new Date().toISOString(),
     headers: headers || [],
@@ -981,7 +984,7 @@ app.post("/api/import-batches/commit", (req, res) => {
   db.import_batches.unshift(newBatch);
 
   // Commit each record
-  rows.forEach((row: any) => {
+  rowsToCommit.forEach((row: any) => {
     const patientId = "pat_" + Math.random().toString(36).substring(2, 11);
     const appointmentId = "apt_" + Math.random().toString(36).substring(2, 11);
     const insId = "ins_" + Math.random().toString(36).substring(2, 11);
@@ -1036,13 +1039,290 @@ app.post("/api/import-batches/commit", (req, res) => {
     client_id,
     "IMPORT_BATCH_COMMITTED",
     batchId,
-    `Committed import batch ${filename} with ${rows.length} insurance tracking rows.`
+    `Committed import batch ${filename} with ${rowsToCommit.length} insurance tracking rows.`
   );
+
+  const forcedCreations = Object.values(decisions).filter(d => d === "create").length;
+  if (forcedCreations > 0) {
+    writeAuditLog(
+      user.id,
+      user.email,
+      client_id,
+      "DUPLICATE_OVERRIDE",
+      batchId,
+      `User confirmed creation of ${forcedCreations} rows despite fuzzy duplicate warnings in batch ${filename}.`
+    );
+  }
 
   res.json({ success: true, batch: newBatch });
 });
 
+// On-Demand Intake Extraction
+app.post("/api/on-demand/extract", async (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { client_id, text } = req.body;
+  if (!client_id || !text) {
+    return res.status(400).json({ error: "client_id and text are required" });
+  }
+
+  if (!canAccessClient(user, client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  try {
+    const prompt = `You are a medical intake extraction assistant. Extract the following information from the text below:
+    - patient_first_name
+    - patient_last_name
+    - patient_dob (format YYYY-MM-DD if possible)
+    - appointment_date (format YYYY-MM-DD or whatever is mentioned)
+    - provider_name
+    - carrier_name
+
+    Return a JSON object with exactly these keys. Any field not found in the text should be null, not guessed.
+
+    Text:
+    ${text}
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const result = JSON.parse(response.text || "{}");
+    res.json(result);
+  } catch (err) {
+    console.error("AI extraction failed", err);
+    res.status(500).json({ error: "Failed to extract fields" });
+  }
+});
+
+// On-Demand Intake Commit Draft
+app.post("/api/on-demand/commit", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { client_id, data } = req.body;
+  if (!client_id || !data) {
+    return res.status(400).json({ error: "client_id and data are required" });
+  }
+
+  if (!data.patient_first_name || !data.patient_last_name || !data.patient_dob) {
+    return res.status(400).json({
+      error: "Patient first name, last name, and date of birth are required before creating a record. Please fill in any fields the extraction missed."
+    });
+  }
+
+  if (!canAccessClient(user, client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  const db = loadDb();
+
+  const patientId = "pat_" + Math.random().toString(36).substring(2, 11);
+  const appointmentId = "apt_" + Math.random().toString(36).substring(2, 11);
+  const insId = "ins_" + Math.random().toString(36).substring(2, 11);
+
+  // Save Patient
+  const newPatient = {
+    id: patientId,
+    client_id,
+    first_name: data.patient_first_name || "Unknown",
+    last_name: data.patient_last_name || "Patient",
+    dob: data.patient_dob || "1990-01-01",
+    gender: data.patient_gender || "Other", // Can add gender if we want, defaulting for now
+    created_at: new Date().toISOString()
+  };
+  db.patients.push(newPatient);
+
+  // Save Appointment
+  const newAppointment = {
+    id: appointmentId,
+    client_id,
+    patient_id: patientId,
+    appointment_date: data.appointment_date || new Date().toISOString().split("T")[0],
+    provider_name: data.provider_name || "Unknown Provider",
+    status: "pending_review" as const,
+    source: "on_demand_email",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  db.appointments.push(newAppointment);
+
+  // Save Insurance details
+  const newInsurance = {
+    id: insId,
+    patient_id: patientId,
+    appointment_id: appointmentId,
+    client_id,
+    carrier_name: data.carrier_name || "Unknown Insurance",
+    policy_number: encrypt("PENDING"),
+    group_number: "",
+    subscriber_name: `${newPatient.first_name} ${newPatient.last_name}`,
+    subscriber_dob: newPatient.dob,
+    relationship: "Self",
+    created_at: new Date().toISOString()
+  };
+  db.insurance_details.push(newInsurance);
+
+  saveDb(db);
+
+  writeAuditLog(
+    user.id,
+    user.email,
+    client_id,
+    "ON_DEMAND_DRAFT_CREATED",
+    appointmentId,
+    `Created draft record for ${newPatient.first_name} ${newPatient.last_name} via On-Demand email paste.`
+  );
+
+  res.json({ success: true, patient_id: patientId, appointment_id: appointmentId });
+});
+
+function soundex(s: string): string {
+  if (!s) return "";
+  let a = s.toLowerCase().split(''),
+      f = a.shift(),
+      r = '',
+      codes: any = { a: '', e: '', i: '', o: '', u: '', b: 1, f: 1, p: 1, v: 1, c: 2, g: 2, j: 2, k: 2, q: 2, s: 2, x: 2, z: 2, d: 3, t: 3, l: 4, m: 5, n: 5, r: 6 };
+  f = f ? f.toUpperCase() : '';
+  r = f + a.map(v => codes[v] || codes[v] === 0 ? codes[v] : '').join('').replace(/(.)\1+/g, '$1').replace(/0/g, '');
+  return (r + '0000').slice(0, 4);
+}
+
+function levenshtein(a: string, b: string): number {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  let matrix = [];
+  let i, j;
+  for (i = 0; i <= b.length; i++) { matrix[i] = [i]; }
+  for (j = 0; j <= a.length; j++) { matrix[0][j] = j; }
+  for (i = 1; i <= b.length; i++) {
+    for (j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) == a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+app.post("/api/import-batches/check-duplicates", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { client_id, rows } = req.body;
+  if (!client_id || !rows || !Array.isArray(rows)) {
+    return res.status(400).json({ error: "client_id and rows array are required." });
+  }
+
+  if (!canAccessClient(user, client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  const db = loadDb();
+  const existingPatients = db.patients.filter((p: any) => p.client_id === client_id);
+
+  const duplicates = rows.map((row: any, index: number) => {
+    if (!row.first_name || !row.last_name || !row.dob) return null;
+    
+    // Find a fuzzy match
+    const match = existingPatients.find((p: any) => {
+      // Normalize DOB to YYYY-MM-DD
+      const normalizeDate = (d: string) => {
+        try {
+          const date = new Date(d);
+          if (isNaN(date.getTime())) return d;
+          return date.toISOString().split("T")[0];
+        } catch {
+          return d;
+        }
+      };
+
+      // DOB must be exact match for this heuristic
+      if (normalizeDate(p.dob) !== normalizeDate(row.dob)) return false;
+      
+      const fn1 = p.first_name.toLowerCase();
+      const fn2 = row.first_name.toLowerCase();
+      const ln1 = p.last_name.toLowerCase();
+      const ln2 = row.last_name.toLowerCase();
+
+      const fnLev = levenshtein(fn1, fn2);
+      const lnLev = levenshtein(ln1, ln2);
+      const fnSdx = soundex(fn1) === soundex(fn2);
+      const lnSdx = soundex(ln1) === soundex(ln2);
+
+      // Match if (First name is close OR soundex matches) AND (Last name is close OR soundex matches)
+      const firstMatch = fnLev <= 2 || fnSdx;
+      const lastMatch = lnLev <= 2 || lnSdx;
+      
+      return firstMatch && lastMatch;
+    });
+
+    if (match) {
+      return {
+        rowIndex: index,
+        existingPatient: match
+      };
+    }
+    return null;
+  }).filter(Boolean);
+
+  res.json({ duplicates });
+});
+
 // Appointments & Patients details combined (Queue list)
+// Simple in-memory cache for call scripts
+const callScriptCache = new Map<string, string>();
+
+app.post("/api/ai/call-script", async (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { client_id, carrier_name, provider_name } = req.body;
+  if (!client_id || !carrier_name) {
+    return res.status(400).json({ error: "client_id and carrier_name are required" });
+  }
+
+  if (!canAccessClient(user, client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  const cacheKey = carrier_name.toLowerCase().trim();
+  if (callScriptCache.has(cacheKey)) {
+    return res.json({ script: callScriptCache.get(cacheKey), source: "cache" });
+  }
+
+  try {
+    const prompt = `You are a medical billing expert. Generate a short (4-6 item) practical call checklist for an insurance verification call.
+    Carrier: ${carrier_name}
+    Provider: ${provider_name || "Unknown"}
+    
+    The checklist should include items to confirm like "plan is active as of today", "ask about copay amount", "confirm prior authorization requirements", etc.
+    Return only the list items, separated by newlines, as plain text without markdown or numbering.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+    const script = response.text || "";
+    callScriptCache.set(cacheKey, script);
+
+    res.json({ script, source: "ai" });
+  } catch (err) {
+    console.error("AI script generation failed", err);
+    res.status(500).json({ error: "Failed to generate script" });
+  }
+});
+
 app.get("/api/appointments", (req, res) => {
   const user = (req as any).user;
   if (!user) return res.status(401).json({ error: "Unauthorized" });

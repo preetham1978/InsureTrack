@@ -113,7 +113,7 @@ export default function ComplianceScreen() {
       id: "AUTH-007",
       category: "AUTH",
       title: "Sandbox Pre-Provisioning Override",
-      description: "Assert sandbox testers can auto-provision any custom email with custom Medyaan roles in real-time.",
+      description: "Assert sandbox testers can auto-provision any custom email with custom VeloAI roles in real-time.",
       citation: "server.ts lines 477-484",
       status: "PASS",
       rationale: "Login screen allows automatic mock account generation directly inside pre-production database context on typing unknown emails."
@@ -643,7 +643,7 @@ export default function ComplianceScreen() {
       description: "Assert encryption key environment variable handles empty states with a fallback secret key.",
       citation: "server.ts lines 12-13",
       status: "PASS",
-      rationale: "Initializes ENCRYPTION_KEY using process.env.ENCRYPTION_KEY || medyaan_insure_track_secret_1234."
+      rationale: "Initializes ENCRYPTION_KEY using process.env.ENCRYPTION_KEY || veloai_insure_track_secret_1234."
     },
     {
       id: "SEC-004",
@@ -945,7 +945,7 @@ export default function ComplianceScreen() {
     const blob = new Blob([csvHeaders + csvRows], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `medyaan_insuretrack_compliance_matrix_89_tests.csv`);
+    link.setAttribute("download", `veloai_insuretrack_compliance_matrix_89_tests.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1003,7 +1003,7 @@ export default function ComplianceScreen() {
         <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-800 shadow-lg backdrop-blur-sm">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">SLA Compliance</span>
           <div className="text-3xl font-extrabold text-emerald-400 mt-1">100%</div>
-          <span className="text-[10px] text-slate-500 font-medium block mt-0.5">Medyaan B2B Certifiable</span>
+          <span className="text-[10px] text-slate-500 font-medium block mt-0.5">VeloAI B2B Certifiable</span>
         </div>
       </div>
 

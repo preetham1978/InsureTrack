@@ -246,7 +246,7 @@ export default function UserManagementScreen({ currentUser }: UserManagementScre
                             {clientObj ? `${clientObj.name} (${clientObj.code})` : "Unassigned Clinic"}
                           </span>
                         ) : (
-                          <span className="text-slate-500 italic font-normal">All Tenants (Medyaan Staff)</span>
+                          <span className="text-slate-500 italic font-normal">All Tenants (VeloAI Staff)</span>
                         )}
                       </td>
                       <td className="p-4 text-slate-400 font-mono">
@@ -330,7 +330,7 @@ export default function UserManagementScreen({ currentUser }: UserManagementScre
                   disabled={isEditMode}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@medyaan.com"
+                  placeholder="name@veloai.com"
                   className="w-full text-xs p-2.5 bg-slate-950 border border-slate-850 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-600 disabled:bg-slate-900 disabled:text-slate-500 disabled:border-slate-800"
                 />
               </div>
@@ -347,7 +347,7 @@ export default function UserManagementScreen({ currentUser }: UserManagementScre
                   <option value="team1_reviewer" className="bg-slate-900">Team 1 Reviewer (Intake Audit)</option>
                   <option value="team2_verifier" className="bg-slate-900">Team 2 Verifier (Insurance Caller)</option>
                   <option value="client_viewer" className="bg-slate-900">Client Medical Center Viewer (Tenant Bound)</option>
-                  <option value="ops_admin" className="bg-slate-900">Medyaan Operations Admin</option>
+                  <option value="ops_admin" className="bg-slate-900">VeloAI Operations Admin</option>
                   <option value="super_admin" className="bg-slate-900">Super Administrator</option>
                 </select>
               </div>

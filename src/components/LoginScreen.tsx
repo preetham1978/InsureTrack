@@ -65,7 +65,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">InsureTrack</h1>
-            <p className="text-xs text-slate-400 font-medium">Healthcare Revenue-Cycle by Medyaan</p>
+            <p className="text-xs text-slate-400 font-medium">Healthcare Revenue-Cycle by VeloAI</p>
           </div>
         </div>
         <h2 className="mt-6 text-center text-xl font-semibold tracking-tight text-slate-200">
@@ -109,7 +109,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="block w-full pl-9 pr-3 py-2 bg-slate-950/50 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="name@medyaan.com"
+                    placeholder="name@veloai.com"
                   />
                 </div>
               </div>
@@ -128,11 +128,11 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 <p className="text-xs font-medium text-slate-400 mb-2">Quick Test Accounts:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { label: "Super Admin", email: "super_admin@medyaan.com" },
-                    { label: "Reviewer", email: "reviewer@medyaan.com" },
-                    { label: "Verifier", email: "verifier@medyaan.com" },
-                    { label: "Ops Admin", email: "ops_admin@medyaan.com" },
-                    { label: "Client Viewer", email: "apc_viewer@medyaan.com" }
+                    { label: "Super Admin", email: "super_admin@veloai.com" },
+                    { label: "Reviewer", email: "reviewer@veloai.com" },
+                    { label: "Verifier", email: "verifier@veloai.com" },
+                    { label: "Ops Admin", email: "ops_admin@veloai.com" },
+                    { label: "Client Viewer", email: "apc_viewer@veloai.com" }
                   ].map((acc) => (
                     <button
                       key={acc.email}

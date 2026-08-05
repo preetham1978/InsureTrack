@@ -10,7 +10,9 @@ import {
   EyeOff, 
   CheckCircle, 
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Loader2,
+  CheckCircle2
 } from "lucide-react";
 import { api } from "../api";
 import { User as UserType, Appointment } from "../types";
@@ -44,6 +46,9 @@ export default function WorkspaceScreen({ user, appointmentId, onBack }: Workspa
     deductibleMet: false,
     priorAuthRequired: false,
   });
+  
+  const [generatedScript, setGeneratedScript] = useState<string | null>(null);
+  const [generatingScript, setGeneratingScript] = useState(false);
 
   const loadDetail = async () => {
     setLoading(true);
@@ -112,6 +117,25 @@ export default function WorkspaceScreen({ user, appointmentId, onBack }: Workspa
       ...prev,
       [field]: !prev[field]
     }));
+  };
+
+  const handleGenerateScript = async () => {
+    if (!detail?.appointment?.insurance?.carrier_name) return;
+    setGeneratingScript(true);
+    setGeneratedScript(null);
+    try {
+      const res = await api.getCallScript(
+        detail.appointment.client_id, 
+        detail.appointment.insurance.carrier_name,
+        detail.appointment.provider_name
+      );
+      setGeneratedScript(res.script);
+    } catch (err) {
+      console.error(err);
+      setGeneratedScript("Failed to generate checklist.");
+    } finally {
+      setGeneratingScript(false);
+    }
   };
 
   const handleSubmitOutcome = async (e: React.FormEvent) => {
@@ -354,10 +378,33 @@ export default function WorkspaceScreen({ user, appointmentId, onBack }: Workspa
               <form onSubmit={handleSubmitOutcome} className="p-5 space-y-4">
                 
                 {/* 1. Interactive checklist */}
-                <div className="space-y-2">
-                  <span className="block text-[10px] uppercase text-slate-500 font-extrabold tracking-wider">
-                    Interactive Verification Checklist
-                  </span>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="block text-[10px] uppercase text-slate-500 font-extrabold tracking-wider">
+                      Interactive Verification Checklist
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleGenerateScript}
+                      disabled={generatingScript}
+                      className="text-[10px] bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 px-2 py-1 rounded transition-colors flex items-center space-x-1"
+                    >
+                      {generatingScript ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
+                      <span>Generate Call Checklist</span>
+                    </button>
+                  </div>
+
+                  {generatedScript && (
+                    <div className="bg-slate-900 border border-blue-500/30 rounded p-3 text-xs text-slate-300">
+                      <div className="text-blue-400 font-semibold mb-2 flex items-center space-x-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>AI Suggested Reference Checklist</span>
+                      </div>
+                      <div className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed">
+                        {generatedScript}
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="space-y-1.5">
                     <button

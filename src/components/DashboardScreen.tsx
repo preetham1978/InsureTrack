@@ -127,7 +127,7 @@ export default function DashboardScreen({ user, onNavigateToQueue, onNavigateToW
               onChange={(e) => setSelectedClient(e.target.value)}
               className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-lg text-xs font-semibold text-slate-200 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
-              <option value="all">All Clients (Medyaan Ops Admin View)</option>
+              <option value="all">All Clients (VeloAI Ops Admin View)</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.code})
@@ -407,7 +407,7 @@ export default function DashboardScreen({ user, onNavigateToQueue, onNavigateToW
             <div className="bg-slate-950/40 border border-slate-850 p-3 rounded-lg text-[11px] text-slate-400 flex items-start space-x-2 mt-4">
               <HelpCircle className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
               <span>
-                Medyaan revenue automation maintains strict offline storage and sync support. You can check current insurance verification cycle performance metrics securely.
+                VeloAI revenue automation maintains strict offline storage and sync support. You can check current insurance verification cycle performance metrics securely.
               </span>
             </div>
           </div>

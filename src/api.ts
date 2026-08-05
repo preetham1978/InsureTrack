@@ -89,16 +89,62 @@ export const api = {
     return res.json();
   },
 
-  async commitImportBatch(client_id: string, filename: string, rows: any[], headers?: string[], field_mapping?: Record<string, string>) {
+  async checkDuplicates(client_id: string, rows: any[]) {
+    const res = await fetch(`${API_BASE}/api/import-batches/check-duplicates`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ client_id, rows }),
+    });
+    if (!res.ok) throw new Error("Failed to check for duplicates");
+    return res.json();
+  },
+
+  async commitImportBatch(client_id: string, filename: string, rows: any[], headers?: string[], field_mapping?: Record<string, string>, rowDecisions?: Record<number, string>) {
     const res = await fetch(`${API_BASE}/api/import-batches/commit`, {
       method: "POST",
       headers: getHeaders(),
-      body: JSON.stringify({ client_id, filename, rows, headers, field_mapping }),
+      body: JSON.stringify({ client_id, filename, rows, headers, field_mapping, rowDecisions }),
     });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.error || "Import commit failed");
     }
+    return res.json();
+  },
+
+  async extractOnDemandRecord(client_id: string, text: string) {
+    const res = await fetch(`${API_BASE}/api/on-demand/extract`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ client_id, text }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to extract record");
+    }
+    return res.json();
+  },
+
+  async commitOnDemandRecord(client_id: string, data: any) {
+    const res = await fetch(`${API_BASE}/api/on-demand/commit`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ client_id, data }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to commit record");
+    }
+    return res.json();
+  },
+
+  async getCallScript(client_id: string, carrier_name: string, provider_name?: string) {
+    const res = await fetch(`${API_BASE}/api/ai/call-script`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ client_id, carrier_name, provider_name }),
+    });
+    if (!res.ok) throw new Error("Failed to generate call script");
     return res.json();
   },
 

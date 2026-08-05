@@ -9,7 +9,8 @@ import {
   LogOut,
   User as UserIcon,
   PhoneCall,
-  ShieldCheck
+  ShieldCheck,
+  FileText
 } from "lucide-react";
 import { api } from "./api";
 import { User, UserRole } from "./types";
@@ -18,6 +19,7 @@ import { User, UserRole } from "./types";
 import LoginScreen from "./components/LoginScreen";
 import DashboardScreen from "./components/DashboardScreen";
 import ImportCenterScreen from "./components/ImportCenterScreen";
+import OnDemandIntakeScreen from "./components/OnDemandIntakeScreen";
 import QueueScreen from "./components/QueueScreen";
 import WorkspaceScreen from "./components/WorkspaceScreen";
 import UserManagementScreen from "./components/UserManagementScreen";
@@ -73,6 +75,7 @@ export default function App() {
     // team1_reviewer, ops_admin, super_admin have access to Import Center
     if (["team1_reviewer", "ops_admin", "super_admin"].includes(user.role)) {
       tabs.push({ id: "import", label: "Import Center", icon: Upload });
+      tabs.push({ id: "ondemand", label: "On-Demand Intake", icon: FileText });
     }
 
     // ops_admin and super_admin have access to User Management
@@ -107,16 +110,16 @@ export default function App() {
       {/* Top Banner Header */}
       <header className="bg-[#020617]/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 shadow-xl shadow-black/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-14 items-center">
+          <div className="flex justify-between min-h-[3.5rem] py-2 items-center gap-2">
             
             {/* Logo and Name */}
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-600 p-1.5 rounded-lg text-white">
+            <div className="flex items-center space-x-2 min-w-0">
+              <div className="bg-blue-600 p-1.5 rounded-lg text-white shrink-0">
                 <Shield className="w-5 h-5" />
               </div>
-              <div>
-                <span className="font-extrabold text-sm text-white tracking-tight block leading-none">InsureTrack</span>
-                <span className="text-[9px] text-slate-400 font-medium">B2B Healthcare Intake by Medyaan</span>
+              <div className="min-w-0">
+                <span className="font-extrabold text-sm text-white tracking-tight block leading-none truncate">InsureTrack</span>
+                <span className="text-[8px] sm:text-[9px] text-slate-400 font-medium block whitespace-nowrap mt-0.5">B2B Healthcare Intake by VeloAI</span>
               </div>
             </div>
 
@@ -221,6 +224,7 @@ export default function App() {
         {activeTab === "compliance" && <ComplianceScreen />}
 
         {activeTab === "import" && <ImportCenterScreen user={user} />}
+        {activeTab === "ondemand" && <OnDemandIntakeScreen user={user} />}
 
         {activeTab === "users" && <UserManagementScreen currentUser={user} />}
 
@@ -240,7 +244,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-[#020617] border-t border-slate-800/80 py-6 text-center text-[10px] text-slate-500 font-medium font-sans mt-auto">
-        <div>InsureTrack Enterprise Healthcare Revenue Platform v1.1.0 • Medyaan LLC</div>
+        <div>InsureTrack Enterprise Healthcare Revenue Platform v1.1.0 • VeloAI LLC</div>
         <div className="mt-1 opacity-75">All operational logs are securely cataloged and RLS constraints active.</div>
       </footer>
 

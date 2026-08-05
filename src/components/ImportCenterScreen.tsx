@@ -33,6 +33,8 @@ export default function ImportCenterScreen({ user }: ImportCenterScreenProps) {
   const [columnMappings, setColumnMappings] = useState<Record<string, string>>({});
   const [aiSuggestedColumns, setAiSuggestedColumns] = useState<Record<string, boolean>>({});
   const [step, setStep] = useState<"upload" | "map" | "preview">("upload");
+  const [duplicates, setDuplicates] = useState<Record<number, any>>({});
+  const [rowDecisions, setRowDecisions] = useState<Record<number, "create" | "skip">>({});
 
   // Load clients and batch history
   const loadInitialData = async () => {
@@ -205,16 +207,46 @@ export default function ImportCenterScreen({ user }: ImportCenterScreenProps) {
     });
   };
 
+  const handleProceedToPreview = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const records = getMappedRecords();
+      const res = await api.checkDuplicates(selectedClientId, records);
+      const dupMap: Record<number, any> = {};
+      res.duplicates.forEach((d: any) => {
+        dupMap[d.rowIndex] = d.existingPatient;
+      });
+      setDuplicates(dupMap);
+      setRowDecisions({});
+      setStep("preview");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to check for duplicates");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCommitBatch = async () => {
+    // Check if any duplicates are pending decision
+    const pendingDecisions = Object.keys(duplicates).some(rIdx => !rowDecisions[Number(rIdx)]);
+    if (pendingDecisions) {
+      setErrorMsg("Please make a decision for all flagged duplicates before committing.");
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
     try {
       const records = getMappedRecords();
+      // Filter out skipped rows, and we also pass the decisions for audit logging if we want
+      const recordsToCommit = records.filter((_, idx) => rowDecisions[idx] !== "skip");
+      const skippedCount = records.length - recordsToCommit.length;
       
       // Basic fields validation check
-      const missingFields = records.some(r => !r.first_name || !r.last_name || !r.policy_number);
+      const missingFields = recordsToCommit.some(r => !r.first_name || !r.last_name || !r.policy_number);
       if (missingFields) {
         if (!confirm("Some records are missing essential fields (first_name, last_name, or policy_number). Proceed anyway?")) {
           setLoading(false);
@@ -222,9 +254,9 @@ export default function ImportCenterScreen({ user }: ImportCenterScreenProps) {
         }
       }
 
-      const res = await api.commitImportBatch(selectedClientId, fileName, records, parsedHeaders, columnMappings);
+      const res = await api.commitImportBatch(selectedClientId, fileName, recordsToCommit, parsedHeaders, columnMappings, rowDecisions);
       if (res.success) {
-        setSuccessMsg(`Batch committed successfully! Created ${records.length} records inside client registry.`);
+        setSuccessMsg(`Batch committed successfully! Created ${recordsToCommit.length} records. ${skippedCount > 0 ? `Skipped ${skippedCount} duplicate rows.` : ""}`);
         setStep("upload");
         setCsvText("");
         setFileName("manual_pasted_data.csv");
@@ -451,10 +483,11 @@ export default function ImportCenterScreen({ user }: ImportCenterScreenProps) {
                     Go Back
                   </button>
                   <button
-                    onClick={() => setStep("preview")}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold cursor-pointer flex items-center space-x-1.5 border-0 shadow-lg shadow-emerald-950/20"
+                    onClick={handleProceedToPreview}
+                    disabled={loading}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold cursor-pointer flex items-center space-x-1.5 border-0 shadow-lg shadow-emerald-950/20 disabled:opacity-50"
                   >
-                    <span>Proceed to Preview</span>
+                    <span>{loading ? "Checking..." : "Proceed to Preview"}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -479,27 +512,75 @@ export default function ImportCenterScreen({ user }: ImportCenterScreenProps) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60 bg-slate-900/10">
-                      {getMappedRecords().map((record, rIdx) => (
-                        <tr key={rIdx} className="hover:bg-slate-800/10 transition-colors">
-                          <td className="p-3 font-semibold text-white">
-                            {record.first_name || <span className="text-rose-400 font-normal">Missing first_name</span>}{" "}
-                            {record.last_name || <span className="text-rose-400 font-normal">Missing last_name</span>}
-                          </td>
-                          <td className="p-3 text-slate-400 font-mono">
-                            {record.dob || "—"} / {record.gender || "—"}
-                          </td>
-                          <td className="p-3">
-                            <span className="block font-medium text-slate-300">{record.carrier_name || "—"}</span>
-                            <span className="text-[10px] bg-slate-950 text-slate-400 px-1 py-0.5 rounded font-mono font-semibold border border-slate-850">
-                              {record.policy_number || <span className="text-rose-400 font-normal">Missing policy</span>}
-                            </span>
-                          </td>
-                          <td className="p-3 text-slate-400">
-                            <span className="block font-medium text-slate-300">{record.provider_name || "—"}</span>
-                            <span className="text-[10px]">{record.appointment_date || "—"}</span>
-                          </td>
-                        </tr>
-                      ))}
+                      {getMappedRecords().map((record, rIdx) => {
+                        const dup = duplicates[rIdx];
+                        const decision = rowDecisions[rIdx];
+                        const isSkipped = decision === "skip";
+                        
+                        return (
+                          <React.Fragment key={rIdx}>
+                            <tr className={`hover:bg-slate-800/10 transition-colors ${isSkipped ? "opacity-40 bg-slate-900/30" : ""} ${dup && !decision ? "bg-amber-900/20" : ""}`}>
+                              <td className="p-3 font-semibold text-white">
+                                {record.first_name || <span className="text-rose-400 font-normal">Missing first_name</span>}{" "}
+                                {record.last_name || <span className="text-rose-400 font-normal">Missing last_name</span>}
+                              </td>
+                              <td className="p-3 text-slate-400 font-mono">
+                                {record.dob || "—"} / {record.gender || "—"}
+                              </td>
+                              <td className="p-3">
+                                <span className="block font-medium text-slate-300">{record.carrier_name || "—"}</span>
+                                <span className="text-[10px] bg-slate-950 text-slate-400 px-1 py-0.5 rounded font-mono font-semibold border border-slate-850">
+                                  {record.policy_number || <span className="text-rose-400 font-normal">Missing policy</span>}
+                                </span>
+                              </td>
+                              <td className="p-3 text-slate-400">
+                                <span className="block font-medium text-slate-300">{record.provider_name || "—"}</span>
+                                <span className="text-[10px]">{record.appointment_date || "—"}</span>
+                              </td>
+                            </tr>
+                            {dup && !decision && (
+                              <tr className="bg-amber-900/10 border-b border-slate-800/60">
+                                <td colSpan={4} className="p-3">
+                                  <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-2 bg-amber-950/40 p-2.5 rounded border border-amber-900/50">
+                                    <div className="flex items-center space-x-2 text-amber-500">
+                                      <AlertCircle className="w-4 h-4" />
+                                      <span className="font-medium">
+                                        Possible duplicate of {dup.first_name} {dup.last_name} ({dup.dob})
+                                      </span>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                      <button 
+                                        onClick={() => setRowDecisions({...rowDecisions, [rIdx]: "skip"})}
+                                        className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-semibold"
+                                      >
+                                        Skip this row
+                                      </button>
+                                      <button 
+                                        onClick={() => setRowDecisions({...rowDecisions, [rIdx]: "create"})}
+                                        className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-bold"
+                                      >
+                                        Create anyway
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                            {dup && decision && (
+                              <tr className="border-b border-slate-800/60">
+                                <td colSpan={4} className="px-3 py-1.5 bg-slate-950/50 text-[10px] text-slate-400 font-medium">
+                                  Duplicate flagged. User decided to: <strong className={decision === "skip" ? "text-rose-400" : "text-emerald-400"}>{decision === "skip" ? "Skip" : "Create Anyway"}</strong>.
+                                  <button onClick={() => {
+                                    const next = {...rowDecisions};
+                                    delete next[rIdx];
+                                    setRowDecisions(next);
+                                  }} className="ml-2 text-blue-400 hover:underline">Change</button>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
