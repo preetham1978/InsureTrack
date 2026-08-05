@@ -1,0 +1,1557 @@
+import express from "express";
+import path from "path";
+import fs from "fs";
+import crypto from "crypto";
+import jwt from "jsonwebtoken";
+import { GoogleGenAI } from "@google/genai";
+import { createServer as createViteServer } from "vite";
+import { initializeApp } from "firebase/app";
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  getDocs, 
+  getDoc, 
+  setDoc, 
+  deleteDoc, 
+  initializeFirestore,
+  setLogLevel
+} from "firebase/firestore";
+
+setLogLevel("silent");
+
+const app = express();
+const PORT = 3000;
+const DB_FILE = path.join(process.cwd(), "database.json");
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+// Simple Reversible Encryption for Policy Numbers
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "medyaan_insure_track_secret_1234"; // 32 chars limit or simple algorithm
+// We will use standard AES-256-CTR or a simpler robust hex-shifting representation to ensure absolute stability in Node.js
+function encrypt(text: string): string {
+  try {
+    const cipher = crypto.createCipheriv(
+      "aes-256-cbc",
+      Buffer.from(ENCRYPTION_KEY.padEnd(32, "0").slice(0, 32)),
+      Buffer.alloc(16, 0) // zero initialization vector for simplicity of demonstration
+    );
+    let encrypted = cipher.update(text, "utf8", "hex");
+    encrypted += cipher.final("hex");
+    return "enc:" + encrypted;
+  } catch (err) {
+    return "enc_failed:" + text;
+  }
+}
+
+function decrypt(cipherText: string): string {
+  if (!cipherText.startsWith("enc:")) {
+    return cipherText;
+  }
+  try {
+    const rawHex = cipherText.substring(4);
+    const decipher = crypto.createDecipheriv(
+      "aes-256-cbc",
+      Buffer.from(ENCRYPTION_KEY.padEnd(32, "0").slice(0, 32)),
+      Buffer.alloc(16, 0)
+    );
+    let decrypted = decipher.update(rawHex, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+    return decrypted;
+  } catch (err) {
+    return "decryption_error";
+  }
+}
+
+// Ensure database file exists with initial mock data
+function ensureDatabase() {
+  if (fs.existsSync(DB_FILE)) {
+    try {
+      JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+      return;
+    } catch (e) {
+      console.error("Invalid database file. Re-creating...");
+    }
+  }
+
+  // Create Seed Data
+  const clients = [
+    { id: "client_apc", name: "Apex Primary Care", code: "APC", created_at: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString() },
+    { id: "client_mhg", name: "Metropolitan Health Group", code: "MHG", created_at: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString() },
+    { id: "client_vap", name: "Valley Pediatrics", code: "VAP", created_at: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString() }
+  ];
+
+  const users = [
+    { id: "user_rev", email: "reviewer@medyaan.com", role: "team1_reviewer", client_id: null, name: "Prasad Preetham (Reviewer)", created_at: new Date().toISOString() },
+    { id: "user_ver", email: "verifier@medyaan.com", role: "team2_verifier", client_id: null, name: "Sarah Connor (Verifier)", created_at: new Date().toISOString() },
+    { id: "user_ops", email: "ops_admin@medyaan.com", role: "ops_admin", client_id: null, name: "John Doe (Ops Admin)", created_at: new Date().toISOString() },
+    { id: "user_super", email: "super_admin@medyaan.com", role: "super_admin", client_id: null, name: "Admin (Super)", created_at: new Date().toISOString() },
+    { id: "user_client_apc", email: "apc_viewer@medyaan.com", role: "client_viewer", client_id: "client_apc", name: "Dr. James Carter (APC)", created_at: new Date().toISOString() },
+    { id: "user_client_mhg", email: "mhg_viewer@medyaan.com", role: "client_viewer", client_id: "client_mhg", name: "Jane Smith (MHG)", created_at: new Date().toISOString() }
+  ];
+
+  const import_batches = [
+    {
+      id: "batch_1",
+      client_id: "client_apc",
+      uploaded_by: "user_rev",
+      filename: "appointments_apc_july.xlsx",
+      record_count: 5,
+      status: "completed",
+      created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: "batch_2",
+      client_id: "client_mhg",
+      uploaded_by: "user_rev",
+      filename: "appointments_mhg_aug.csv",
+      record_count: 4,
+      status: "completed",
+      created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
+    }
+  ];
+
+  const patients = [
+    // Client APC Patients
+    { id: "pat_apc_1", client_id: "client_apc", first_name: "John", last_name: "Doe", dob: "1985-05-12", gender: "Male", created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString() },
+    { id: "pat_apc_2", client_id: "client_apc", first_name: "Alice", last_name: "Johnson", dob: "1990-11-23", gender: "Female", created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString() },
+    { id: "pat_apc_3", client_id: "client_apc", first_name: "Robert", last_name: "Miller", dob: "1962-07-04", gender: "Male", created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString() },
+    { id: "pat_apc_4", client_id: "client_apc", first_name: "Emily", last_name: "Davis", dob: "1995-02-18", gender: "Female", created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString() },
+    { id: "pat_apc_5", client_id: "client_apc", first_name: "David", last_name: "Wilson", dob: "1978-09-30", gender: "Male", created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString() },
+    
+    // Client MHG Patients
+    { id: "pat_mhg_1", client_id: "client_mhg", first_name: "Michael", last_name: "Brown", dob: "1970-03-15", gender: "Male", created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString() },
+    { id: "pat_mhg_2", client_id: "client_mhg", first_name: "Sophia", last_name: "Martinez", dob: "1988-12-05", gender: "Female", created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString() },
+    { id: "pat_mhg_3", client_id: "client_mhg", first_name: "William", last_name: "Anderson", dob: "1955-06-25", gender: "Male", created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString() },
+    { id: "pat_mhg_4", client_id: "client_mhg", first_name: "Emma", last_name: "Taylor", dob: "2001-10-10", gender: "Female", created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString() }
+  ];
+
+  const appointments = [
+    // APC Appointments
+    // 1. Pending Review > 24 hours (creates alert!)
+    {
+      id: "apt_apc_1",
+      client_id: "client_apc",
+      patient_id: "pat_apc_1",
+      appointment_date: new Date(Date.now() + 1 * 24 * 3600 * 1000).toISOString().split("T")[0],
+      provider_name: "Dr. Gregory House",
+      status: "pending_review",
+      created_at: new Date(Date.now() - 36 * 3600 * 1000).toISOString(), // 36 hours ago
+      updated_at: new Date(Date.now() - 36 * 3600 * 1000).toISOString()
+    },
+    // 2. In Verification > 3 days (creates alert!)
+    {
+      id: "apt_apc_2",
+      client_id: "client_apc",
+      patient_id: "pat_apc_2",
+      appointment_date: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString().split("T")[0],
+      provider_name: "Dr. Lisa Cuddy",
+      status: "in_verification",
+      created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(), // 4 days ago
+      updated_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString()
+    },
+    // 3. Approved
+    {
+      id: "apt_apc_3",
+      client_id: "client_apc",
+      patient_id: "pat_apc_3",
+      appointment_date: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString().split("T")[0],
+      provider_name: "Dr. James Wilson",
+      status: "approved",
+      created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(),
+      updated_at: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString()
+    },
+    // 4. Pending Review (recent, no alert)
+    {
+      id: "apt_apc_4",
+      client_id: "client_apc",
+      patient_id: "pat_apc_4",
+      appointment_date: new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString().split("T")[0],
+      provider_name: "Dr. Allison Cameron",
+      status: "pending_review",
+      created_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString(), // 4 hours ago
+      updated_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+    },
+    // 5. Not Approved
+    {
+      id: "apt_apc_5",
+      client_id: "client_apc",
+      patient_id: "pat_apc_5",
+      appointment_date: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString().split("T")[0],
+      provider_name: "Dr. Eric Foreman",
+      status: "not_approved",
+      created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(),
+      updated_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
+    },
+
+    // MHG Appointments
+    // 6. In Verification (recent, no alert)
+    {
+      id: "apt_mhg_1",
+      client_id: "client_mhg",
+      patient_id: "pat_mhg_1",
+      appointment_date: new Date(Date.now() + 1 * 24 * 3600 * 1000).toISOString().split("T")[0],
+      provider_name: "Dr. Meredith Grey",
+      status: "in_verification",
+      created_at: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(), // 1 day ago
+      updated_at: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString()
+    },
+    // 7. In Verification > 3 days (creates alert!)
+    {
+      id: "apt_mhg_2",
+      client_id: "client_mhg",
+      patient_id: "pat_mhg_2",
+      appointment_date: new Date(Date.now() + 4 * 24 * 3600 * 1000).toISOString().split("T")[0],
+      provider_name: "Dr. Derek Shepherd",
+      status: "in_verification",
+      created_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(), // 5 days ago
+      updated_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString()
+    },
+    // 8. Pending Review (recent, no alert)
+    {
+      id: "apt_mhg_3",
+      client_id: "client_mhg",
+      patient_id: "pat_mhg_3",
+      appointment_date: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString().split("T")[0],
+      provider_name: "Dr. Cristina Yang",
+      status: "pending_review",
+      created_at: new Date(Date.now() - 12 * 3600 * 1000).toISOString(), // 12 hours ago
+      updated_at: new Date(Date.now() - 12 * 3600 * 1000).toISOString()
+    },
+    // 9. Approved
+    {
+      id: "apt_mhg_4",
+      client_id: "client_mhg",
+      patient_id: "pat_mhg_4",
+      appointment_date: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString().split("T")[0],
+      provider_name: "Dr. Alex Karev",
+      status: "approved",
+      created_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
+      updated_at: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString()
+    }
+  ];
+
+  const insurance_details = [
+    {
+      id: "ins_apc_1",
+      patient_id: "pat_apc_1",
+      appointment_id: "apt_apc_1",
+      client_id: "client_apc",
+      carrier_name: "Blue Cross Blue Shield",
+      policy_number: encrypt("BCBS994827101"),
+      group_number: "TX-40291",
+      subscriber_name: "John Doe",
+      subscriber_dob: "1985-05-12",
+      relationship: "Self",
+      created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: "ins_apc_2",
+      patient_id: "pat_apc_2",
+      appointment_id: "apt_apc_2",
+      client_id: "client_apc",
+      carrier_name: "Aetna",
+      policy_number: encrypt("AET-8839210-C"),
+      group_number: "AE-GRP-90",
+      subscriber_name: "Alice Johnson",
+      subscriber_dob: "1990-11-23",
+      relationship: "Self",
+      created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: "ins_apc_3",
+      patient_id: "pat_apc_3",
+      appointment_id: "apt_apc_3",
+      client_id: "client_apc",
+      carrier_name: "UnitedHealthcare",
+      policy_number: encrypt("UHC-773820921"),
+      group_number: "UH-90412",
+      subscriber_name: "Robert Miller",
+      subscriber_dob: "1962-07-04",
+      relationship: "Self",
+      created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: "ins_apc_4",
+      patient_id: "pat_apc_4",
+      appointment_id: "apt_apc_4",
+      client_id: "client_apc",
+      carrier_name: "Cigna",
+      policy_number: encrypt("CIG-10029304"),
+      group_number: "CI-GRP-11",
+      subscriber_name: "Emily Davis",
+      subscriber_dob: "1995-02-18",
+      relationship: "Self",
+      created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: "ins_apc_5",
+      patient_id: "pat_apc_5",
+      appointment_id: "apt_apc_5",
+      client_id: "client_apc",
+      carrier_name: "Blue Cross Blue Shield",
+      policy_number: encrypt("BCBS11029302"),
+      group_number: "TX-40291",
+      subscriber_name: "David Wilson",
+      subscriber_dob: "1978-09-30",
+      relationship: "Self",
+      created_at: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString()
+    },
+    
+    // MHG
+    {
+      id: "ins_mhg_1",
+      patient_id: "pat_mhg_1",
+      appointment_id: "apt_mhg_1",
+      client_id: "client_mhg",
+      carrier_name: "Cigna",
+      policy_number: encrypt("CIG-9048371"),
+      group_number: "CI-GRP-22",
+      subscriber_name: "Michael Brown",
+      subscriber_dob: "1970-03-15",
+      relationship: "Self",
+      created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: "ins_mhg_2",
+      patient_id: "pat_mhg_2",
+      appointment_id: "apt_mhg_2",
+      client_id: "client_mhg",
+      carrier_name: "Aetna",
+      policy_number: encrypt("AET-1102931"),
+      group_number: "AE-GRP-90",
+      subscriber_name: "Sophia Martinez",
+      subscriber_dob: "1988-12-05",
+      relationship: "Self",
+      created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: "ins_mhg_3",
+      patient_id: "pat_mhg_3",
+      appointment_id: "apt_mhg_3",
+      client_id: "client_mhg",
+      carrier_name: "UnitedHealthcare",
+      policy_number: encrypt("UHC-22948301"),
+      group_number: "UH-90412",
+      subscriber_name: "William Anderson",
+      subscriber_dob: "1955-06-25",
+      relationship: "Self",
+      created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: "ins_mhg_4",
+      patient_id: "pat_mhg_4",
+      appointment_id: "apt_mhg_4",
+      client_id: "client_mhg",
+      carrier_name: "Blue Cross Blue Shield",
+      policy_number: encrypt("BCBS-3829483"),
+      group_number: "TX-10023",
+      subscriber_name: "Mark Taylor",
+      subscriber_dob: "1972-04-14",
+      relationship: "Father",
+      created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
+    }
+  ];
+
+  const verification_calls = [
+    {
+      id: "call_1",
+      appointment_id: "apt_apc_3",
+      verified_by: "user_ver",
+      call_outcome: "approved",
+      checklist: { activeStatus: true, coPayInfo: true, deductibleMet: true, priorAuthRequired: false },
+      notes: "Called BCBS representative. Benefits verified. Policy is active and covers primary care visit with $20 copay.",
+      created_at: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: "call_2",
+      appointment_id: "apt_apc_5",
+      verified_by: "user_ver",
+      call_outcome: "not_approved",
+      checklist: { activeStatus: false, coPayInfo: false, deductibleMet: false, priorAuthRequired: false },
+      notes: "Spoke to Aetna. Policy terminated effective 2026-06-30 due to non-payment.",
+      created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: "call_3",
+      appointment_id: "apt_mhg_4",
+      verified_by: "user_ver",
+      call_outcome: "approved",
+      checklist: { activeStatus: true, coPayInfo: true, deductibleMet: true, priorAuthRequired: true },
+      notes: "Verified coverage with UHC. Prior authorization is required for specialized scan, but primary consultation is approved with $30 copay.",
+      created_at: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString()
+    }
+  ];
+
+  const audit_log = [
+    {
+      id: "audit_init",
+      user_id: "user_super",
+      user_email: "super_admin@medyaan.com",
+      client_id: null,
+      action: "SYSTEM_INITIALIZED",
+      record_id: "system",
+      details: "InsureTrack B2B application has been seeded and initialized.",
+      created_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString()
+    }
+  ];
+
+  const db = {
+    clients,
+    users,
+    import_batches,
+    patients,
+    appointments,
+    insurance_details,
+    verification_calls,
+    audit_log
+  };
+
+  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf8");
+  console.log("Database seeded successfully!");
+}
+
+ensureDatabase();
+
+// --- FIREBASE CLOUD FIRESTORE MIGRATION LAYER ---
+let firestoreDb: any = null;
+let useFirestore = false;
+
+const firebaseConfigPath = path.join(process.cwd(), "firebase-applet-config.json");
+if (fs.existsSync(firebaseConfigPath)) {
+  try {
+    const config = JSON.parse(fs.readFileSync(firebaseConfigPath, "utf8"));
+    const firebaseApp = initializeApp(config);
+    firestoreDb = initializeFirestore(firebaseApp, {
+      experimentalForceLongPolling: true,
+    }, config.firestoreDatabaseId || "(default)");
+    useFirestore = true;
+    console.log("[FIREBASE] Initialized Firestore successfully with custom database ID:", config.firestoreDatabaseId);
+  } catch (err) {
+    console.error("[FIREBASE] Failed to initialize Firestore:", err);
+  }
+}
+
+let dbCache: any = null;
+
+// Write-through helper
+async function syncToFirestore(collectionName: string, id: string, data: any) {
+  if (!useFirestore || !firestoreDb) return;
+  try {
+    const sanitized = JSON.parse(JSON.stringify(data)); // strip undefined elements
+    const docRef = doc(firestoreDb, collectionName, id);
+    await setDoc(docRef, sanitized);
+  } catch (err) {
+    console.error(`[FIREBASE] Error write-through syncing document ${collectionName}/${id}:`, err);
+  }
+}
+
+async function deleteFromFirestore(collectionName: string, id: string) {
+  if (!useFirestore || !firestoreDb) return;
+  try {
+    const docRef = doc(firestoreDb, collectionName, id);
+    await deleteDoc(docRef);
+    console.log(`[FIREBASE] Successfully deleted document ${collectionName}/${id} from Cloud Storage`);
+  } catch (err) {
+    console.error(`[FIREBASE] Error deleting document ${collectionName}/${id}:`, err);
+  }
+}
+
+async function fetchFirestoreCollection(collectionName: string): Promise<any[]> {
+  if (!useFirestore || !firestoreDb) return [];
+  try {
+    const colRef = collection(firestoreDb, collectionName);
+    const snap = await getDocs(colRef);
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (err) {
+    console.error(`[FIREBASE] Error fetching collection '${collectionName}':`, err);
+    return [];
+  }
+}
+
+async function initializeAndSyncDb() {
+  const localDb = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+  
+  if (useFirestore && firestoreDb) {
+    try {
+      console.log("[FIREBASE] Verifying Cloud database status...");
+      const clientsRef = collection(firestoreDb, "clients");
+      const clientsSnap = await getDocs(clientsRef);
+      
+      if (clientsSnap.empty) {
+        console.log("[FIREBASE] Cloud database is empty. Performing automatic database.json to Firestore migration...");
+        const collections = ["clients", "users", "import_batches", "patients", "appointments", "insurance_details", "verification_calls", "audit_log"];
+        
+        for (const colName of collections) {
+          const items = localDb[colName] || [];
+          console.log(`[FIREBASE] Migrating ${items.length} records into '${colName}'...`);
+          for (const item of items) {
+            await syncToFirestore(colName, item.id, item);
+          }
+        }
+        console.log("[FIREBASE] Automatic Firestore migration seeding completed successfully!");
+      } else {
+        console.log("[FIREBASE] Firestore contains existing active data. Syncing cloud dataset into local memory cache...");
+      }
+      
+      // Load source of truth from Cloud Firestore
+      const [clients, users, import_batches, patients, appointments, insurance_details, verification_calls, audit_log] = await Promise.all([
+        fetchFirestoreCollection("clients"),
+        fetchFirestoreCollection("users"),
+        fetchFirestoreCollection("import_batches"),
+        fetchFirestoreCollection("patients"),
+        fetchFirestoreCollection("appointments"),
+        fetchFirestoreCollection("insurance_details"),
+        fetchFirestoreCollection("verification_calls"),
+        fetchFirestoreCollection("audit_log")
+      ]);
+      
+      dbCache = {
+        clients,
+        users,
+        import_batches,
+        patients,
+        appointments,
+        insurance_details,
+        verification_calls,
+        audit_log
+      };
+      
+      // Save localized backup
+      fs.writeFileSync(DB_FILE, JSON.stringify(dbCache, null, 2), "utf8");
+      console.log("[FIREBASE] Memory cache is 100% synchronized with Firebase Cloud Storage. Ready!");
+    } catch (err) {
+      console.error("[FIREBASE] Migration synchronization failed. Falling back to local database.json:", err);
+      dbCache = localDb;
+    }
+  } else {
+    console.log("[FIREBASE] Firebase disabled. Relying on local database.json.");
+    dbCache = localDb;
+  }
+}
+
+function runUserAccessMigration() {
+  const db = loadDb();
+  if (!db.migrations) db.migrations = {};
+  if (!db.migrations.user_access_model_v1) {
+    let migratedCount = 0;
+    db.users = db.users || [];
+    for (const user of db.users) {
+      if (!Array.isArray(user.assigned_client_ids)) {
+        user.assigned_client_ids = [];
+      }
+      if (user.role === "team1_reviewer" || user.role === "team2_verifier") {
+        user.is_global = true;
+        writeAuditLog(
+          "system",
+          "system@medyaan.com",
+          null,
+          "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+          user.id,
+          "User migrated with temporary global access. Please review and narrow assigned clients."
+        );
+        migratedCount++;
+      } else {
+        user.is_global = false;
+      }
+    }
+    db.migrations.user_access_model_v1 = true;
+    saveDb(db);
+    console.log(`Ran user access migration on ${migratedCount} users.`);
+  }
+}
+
+// Fire-and-forget sync trigger on server startup
+initializeAndSyncDb()
+  .then(() => runUserAccessMigration())
+  .catch(err => console.error("Database initialization error:", err));
+
+// Load / Save Helper
+function loadDb() {
+  if (!dbCache) {
+    ensureDatabase();
+    dbCache = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+  }
+  return dbCache;
+}
+
+function saveDb(db: any) {
+  dbCache = db;
+  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf8");
+  
+  // Asynchronously propagate all local mutations to Cloud Firestore
+  if (useFirestore && firestoreDb) {
+    setTimeout(() => {
+      const collections = ["clients", "users", "import_batches", "patients", "appointments", "insurance_details", "verification_calls", "audit_log"];
+      for (const colName of collections) {
+        const items = db[colName] || [];
+        for (const item of items) {
+          syncToFirestore(colName, item.id, item).catch(err => console.error(err));
+        }
+      }
+    }, 0);
+  }
+}
+
+// RLS Filter Engine
+function canAccessClient(user: any, client_id: string): boolean {
+  if (!user) return false;
+  if (user.role === "ops_admin" || user.role === "super_admin") return true;
+  if (user.is_global) return true;
+  if (user.role === "client_viewer") return user.client_id === client_id;
+  return Array.isArray(user.assigned_client_ids) && user.assigned_client_ids.includes(client_id);
+}
+
+function applyRls(db: any, user: any, tableName: string, rows: any[]): any[] {
+  if (!user) return [];
+  return rows.filter((row: any) =>
+    canAccessClient(user, tableName === "clients" ? row.id : row.client_id)
+  );
+}
+
+// Audit logger helper
+function writeAuditLog(userId: string, email: string, clientId: string | null, action: string, recordId: string, details: string) {
+  const db = loadDb();
+  const logEntry = {
+    id: "audit_" + Math.random().toString(36).substring(2, 11),
+    user_id: userId,
+    user_email: email,
+    client_id: clientId,
+    action,
+    record_id: recordId,
+    details,
+    created_at: new Date().toISOString()
+  };
+  db.audit_log.unshift(logEntry); // new logs first
+  saveDb(db);
+}
+
+// JSON body parser
+app.use(express.json({ limit: '10mb' }));
+
+// Middleware to mock authentication via headers
+app.use((req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next(); // let per-route guards decide if auth is required
+  }
+
+  const token = authHeader.substring(7);
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
+      sub: string; email: string; role: string; client_id: string | null;
+    };
+    const db = loadDb();
+    const user = db.users.find((u: any) => u.id === payload.sub);
+    if (!user) return res.status(401).json({ error: "User not found" });
+    (req as any).user = user;
+  } catch {
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+  next();
+});
+
+const otpStore = new Map<string, { otp: string; expiresAt: number }>();
+
+// Authentication APIs
+app.post("/api/auth/login", (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  const db = loadDb();
+  const user = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+
+  if (!user) {
+    return res.status(404).json({
+      error: "User not found",
+      message: "This email isn't registered. Ask your Ops Admin to invite you.",
+    });
+  }
+
+  const otp = crypto.randomInt(100000, 999999).toString();
+  otpStore.set(email.toLowerCase(), { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+  console.log(`[AUTH] Secure OTP sent to email for ${email} (OTP: ${otp})`);
+
+  const responsePayload: any = { message: "OTP sent to your email", email };
+  responsePayload.devOtp = otp; // Always return for demo purposes
+
+  res.json(responsePayload);
+});
+
+app.post("/api/auth/verify-otp", (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ error: "Email and OTP are required" });
+  }
+
+  const entry = otpStore.get((email || "").toLowerCase());
+  
+  // Accept 123456 as universal demo OTP or check store
+  const isValidOtp = otp === "123456" || (!!entry && entry.otp === otp && Date.now() <= entry.expiresAt);
+
+  if (!isValidOtp) {
+    return res.status(401).json({ error: "Invalid or expired code" });
+  }
+
+  if (entry) {
+    otpStore.delete(email.toLowerCase());
+  }
+
+  const db = loadDb();
+  const user = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+  if (!user) {
+    return res.status(401).json({ error: "User not found" });
+  }
+
+  writeAuditLog(user.id, user.email, user.client_id, "USER_LOGIN_SUCCESS", user.id, `User signed in using email/OTP.`);
+
+  const JWT_SECRET = process.env.JWT_SECRET!;
+  const token = jwt.sign(
+    { sub: user.id, email: user.email, role: user.role, client_id: user.client_id },
+    JWT_SECRET,
+    { expiresIn: "12h" }
+  );
+
+  res.json({
+    user,
+    token
+  });
+});
+
+app.get("/api/auth/me", (req, res) => {
+  const user = (req as any).user;
+  if (!user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  res.json({ user });
+});
+
+// Row Level Security Validation test endpoint
+// "Build and TEST this RLS policy before building any UI screen."
+app.get("/api/test-rls", (req, res) => {
+  const db = loadDb();
+  const results: any[] = [];
+  
+  // Test case 1: Super Admin querying patients (should see all 9 patients)
+  const superAdmin = db.users.find((u: any) => u.role === "super_admin");
+  const adminPatients = applyRls(db, superAdmin, "patients", db.patients);
+  results.push({
+    test: "Super Admin bypasses filters",
+    expected: db.patients.length,
+    actual: adminPatients.length,
+    success: adminPatients.length === db.patients.length
+  });
+
+  // Test case 2: client_viewer (for client_apc) querying patients (should only see patients belonging to client_apc)
+  const apcViewer = db.users.find((u: any) => u.email === "apc_viewer@medyaan.com");
+  const apcPatients = applyRls(db, apcViewer, "patients", db.patients);
+  const expectedApcCount = db.patients.filter((p: any) => p.client_id === "client_apc").length;
+  results.push({
+    test: "Client Viewer limits by client_id",
+    expected: expectedApcCount,
+    actual: apcPatients.length,
+    success: apcPatients.length === expectedApcCount && apcPatients.every((p: any) => p.client_id === "client_apc")
+  });
+
+  // Test case 3: client_viewer tries to access details of another client (should be empty or filtered out)
+  const nonApcPatients = apcPatients.filter((p: any) => p.client_id !== "client_apc");
+  results.push({
+    test: "Client Viewer cannot access other client records",
+    expected: 0,
+    actual: nonApcPatients.length,
+    success: nonApcPatients.length === 0
+  });
+
+  const allSuccess = results.every(r => r.success);
+  res.json({
+    message: allSuccess ? "RLS verification tests PASSED successfully!" : "RLS verification tests FAILED!",
+    passed: allSuccess,
+    results
+  });
+});
+
+// Clients API
+app.get("/api/clients", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const db = loadDb();
+  const filtered = applyRls(db, user, "clients", db.clients);
+  res.json(filtered);
+});
+
+// Dashboard statistics
+app.get("/api/dashboard/stats", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const db = loadDb();
+
+  // Apply RLS to appointments
+  const appointments = applyRls(db, user, "appointments", db.appointments);
+  const clients = applyRls(db, user, "clients", db.clients);
+
+  // Status counts
+  const stats = {
+    total: appointments.length,
+    pending_review: appointments.filter((a: any) => a.status === "pending_review").length,
+    in_verification: appointments.filter((a: any) => a.status === "in_verification").length,
+    approved: appointments.filter((a: any) => a.status === "approved").length,
+    not_approved: appointments.filter((a: any) => a.status === "not_approved").length,
+  };
+
+  // Aging alerts:
+  // - pending_review > 24h
+  // - in_verification > 3 days (72h)
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 3600 * 1000);
+  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 3600 * 1000);
+
+  const pendingAlerts = appointments.filter((a: any) => {
+    return a.status === "pending_review" && new Date(a.created_at) < oneDayAgo;
+  });
+
+  const verificationAlerts = appointments.filter((a: any) => {
+    return a.status === "in_verification" && new Date(a.created_at) < threeDaysAgo;
+  });
+
+  // Client summaries
+  const clientBreakdown = clients.map((c: any) => {
+    const clientApts = appointments.filter((a: any) => a.client_id === c.id);
+    return {
+      client_id: c.id,
+      name: c.name,
+      code: c.code,
+      total: clientApts.length,
+      pending_review: clientApts.filter((a: any) => a.status === "pending_review").length,
+      in_verification: clientApts.filter((a: any) => a.status === "in_verification").length,
+      approved: clientApts.filter((a: any) => a.status === "approved").length,
+      not_approved: clientApts.filter((a: any) => a.status === "not_approved").length,
+      aging_pending: clientApts.filter((a: any) => a.status === "pending_review" && new Date(a.created_at) < oneDayAgo).length,
+      aging_verification: clientApts.filter((a: any) => a.status === "in_verification" && new Date(a.created_at) < threeDaysAgo).length,
+    };
+  });
+
+  res.json({
+    stats,
+    agingAlerts: {
+      pending_review_24h_count: pendingAlerts.length,
+      in_verification_3d_count: verificationAlerts.length,
+      alerts: [
+        ...pendingAlerts.map((a: any) => {
+          const patient = db.patients.find((p: any) => p.id === a.patient_id);
+          const client = db.clients.find((c: any) => c.id === a.client_id);
+          const hrs = Math.round((now.getTime() - new Date(a.created_at).getTime()) / (3600 * 1000));
+          return {
+            id: a.id,
+            type: "pending_review_24h",
+            patientName: patient ? `${patient.first_name} ${patient.last_name}` : "Unknown Patient",
+            clientName: client ? client.name : "Unknown Client",
+            created_at: a.created_at,
+            hoursOld: hrs,
+            appointment_date: a.appointment_date,
+            provider_name: a.provider_name
+          };
+        }),
+        ...verificationAlerts.map((a: any) => {
+          const patient = db.patients.find((p: any) => p.id === a.patient_id);
+          const client = db.clients.find((c: any) => c.id === a.client_id);
+          const days = Math.floor((now.getTime() - new Date(a.created_at).getTime()) / (24 * 3600 * 1000));
+          return {
+            id: a.id,
+            type: "in_verification_3d",
+            patientName: patient ? `${patient.first_name} ${patient.last_name}` : "Unknown Patient",
+            clientName: client ? client.name : "Unknown Client",
+            created_at: a.created_at,
+            daysOld: days,
+            appointment_date: a.appointment_date,
+            provider_name: a.provider_name
+          };
+        })
+      ]
+    },
+    clientBreakdown
+  });
+});
+
+// Import batches API
+app.get("/api/import-batches", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const db = loadDb();
+  const filtered = applyRls(db, user, "import_batches", db.import_batches);
+  res.json(filtered);
+});
+
+app.post("/api/import-batches/analyze-mapping", async (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { client_id, headers, sampleRows } = req.body;
+  if (!client_id || !headers || !sampleRows) {
+    return res.status(400).json({ error: "client_id, headers, and sampleRows are required" });
+  }
+
+  const db = loadDb();
+  
+  if (!canAccessClient(user, client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  // 1. Check for previously confirmed mapping
+  const headersJoined = headers.join(",");
+  const pastBatch = db.import_batches.find(
+    (b: any) => b.client_id === client_id && 
+                b.headers && 
+                b.headers.join(",") === headersJoined && 
+                b.field_mapping && 
+                Object.keys(b.field_mapping).length > 0
+  );
+
+  if (pastBatch) {
+    return res.json({ mapping: pastBatch.field_mapping, source: "cache" });
+  }
+
+  // 2. No past mapping, call AI
+  try {
+    const prompt = `You are a data mapping assistant. I have a CSV file with the following columns:
+    
+    ${JSON.stringify(headers)}
+
+    Here are some sample rows:
+    ${JSON.stringify(sampleRows)}
+
+    Please map each column to one of these exact target fields:
+    first_name, last_name, dob, gender, appointment_date, provider_name, carrier_name, policy_number, group_number, subscriber_name, subscriber_dob, relationship.
+
+    Return a JSON object where keys are the source column names, and values are the target fields. 
+    If a column does not confidently match any target field, map it to null.
+    Do not add any explanations, just return the JSON object.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const text = response.text || "{}";
+    const mapping = JSON.parse(text);
+
+    res.json({ mapping, source: "ai" });
+  } catch (err) {
+    console.error("AI mapping failed", err);
+    res.status(500).json({ error: "Failed to analyze mapping" });
+  }
+});
+
+app.post("/api/import-batches/commit", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { client_id, filename, rows, headers, field_mapping } = req.body;
+  if (!client_id || !filename || !rows || !Array.isArray(rows)) {
+    return res.status(400).json({ error: "client_id, filename, and rows array are required." });
+  }
+
+  const db = loadDb();
+  
+  if (!canAccessClient(user, client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  const batchId = "batch_" + Math.random().toString(36).substring(2, 11);
+  const newBatch = {
+    id: batchId,
+    client_id,
+    uploaded_by: user.id,
+    filename,
+    record_count: rows.length,
+    status: "completed" as const,
+    created_at: new Date().toISOString(),
+    headers: headers || [],
+    field_mapping: field_mapping || {}
+  };
+
+  db.import_batches.unshift(newBatch);
+
+  // Commit each record
+  rows.forEach((row: any) => {
+    const patientId = "pat_" + Math.random().toString(36).substring(2, 11);
+    const appointmentId = "apt_" + Math.random().toString(36).substring(2, 11);
+    const insId = "ins_" + Math.random().toString(36).substring(2, 11);
+
+    // Save Patient
+    const newPatient = {
+      id: patientId,
+      client_id,
+      first_name: row.first_name || "Unknown",
+      last_name: row.last_name || "Patient",
+      dob: row.dob || "1990-01-01",
+      gender: row.gender || "Other",
+      created_at: new Date().toISOString()
+    };
+    db.patients.push(newPatient);
+
+    // Save Appointment
+    const newAppointment = {
+      id: appointmentId,
+      client_id,
+      patient_id: patientId,
+      appointment_date: row.appointment_date || new Date().toISOString().split("T")[0],
+      provider_name: row.provider_name || "Unknown Provider",
+      status: "pending_review" as const, // initially moves through pending_review
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    db.appointments.push(newAppointment);
+
+    // Save Insurance details (encrypt policy_number)
+    const newInsurance = {
+      id: insId,
+      patient_id: patientId,
+      appointment_id: appointmentId,
+      client_id,
+      carrier_name: row.carrier_name || "Unknown Insurance",
+      policy_number: encrypt(row.policy_number || "999999"),
+      group_number: row.group_number || "",
+      subscriber_name: row.subscriber_name || `${newPatient.first_name} ${newPatient.last_name}`,
+      subscriber_dob: row.subscriber_dob || newPatient.dob,
+      relationship: row.relationship || "Self",
+      created_at: new Date().toISOString()
+    };
+    db.insurance_details.push(newInsurance);
+  });
+
+  saveDb(db);
+
+  writeAuditLog(
+    user.id,
+    user.email,
+    client_id,
+    "IMPORT_BATCH_COMMITTED",
+    batchId,
+    `Committed import batch ${filename} with ${rows.length} insurance tracking rows.`
+  );
+
+  res.json({ success: true, batch: newBatch });
+});
+
+// Appointments & Patients details combined (Queue list)
+app.get("/api/appointments", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const db = loadDb();
+  
+  // Apply RLS to appointments
+  const filteredAppointments = applyRls(db, user, "appointments", db.appointments);
+
+  // Map other attributes (patient details, insurance details)
+  const result = filteredAppointments.map((apt: any) => {
+    const patient = db.patients.find((p: any) => p.id === apt.patient_id);
+    const insurance = db.insurance_details.find((i: any) => i.appointment_id === apt.id);
+    const calls = db.verification_calls.filter((c: any) => c.appointment_id === apt.id);
+    
+    // Policy number is masked by default
+    let maskedPolicy = "••••••••";
+    if (insurance) {
+      const decrypted = decrypt(insurance.policy_number);
+      maskedPolicy = decrypted.length > 4 
+        ? "••••" + decrypted.slice(-4) 
+        : decrypted;
+    }
+
+    return {
+      ...apt,
+      patient: patient ? {
+        id: patient.id,
+        first_name: patient.first_name,
+        last_name: patient.last_name,
+        dob: patient.dob,
+        gender: patient.gender
+      } : null,
+      insurance: insurance ? {
+        id: insurance.id,
+        carrier_name: insurance.carrier_name,
+        policy_number_masked: maskedPolicy,
+        group_number: insurance.group_number,
+        subscriber_name: insurance.subscriber_name,
+        subscriber_dob: insurance.subscriber_dob,
+        relationship: insurance.relationship
+      } : null,
+      calls_count: calls.length
+    };
+  });
+
+  res.json(result);
+});
+
+// Get detailed appointment by ID (Workspace View)
+// Writing an audit log row for viewing patient record is MANDATORY
+app.get("/api/appointments/:id", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { id } = req.params;
+  const db = loadDb();
+
+  const apt = db.appointments.find((a: any) => a.id === id);
+  if (!apt) {
+    return res.status(404).json({ error: "Appointment not found" });
+  }
+
+  if (!canAccessClient(user, apt.client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  const patient = db.patients.find((p: any) => p.id === apt.patient_id);
+  const insurance = db.insurance_details.find((i: any) => i.appointment_id === apt.id);
+  const calls = db.verification_calls.filter((c: any) => c.appointment_id === apt.id);
+
+  let decryptedPolicy = "";
+  let maskedPolicy = "••••••••";
+  if (insurance) {
+    decryptedPolicy = decrypt(insurance.policy_number);
+    maskedPolicy = decryptedPolicy.length > 4 
+      ? "••••" + decryptedPolicy.slice(-4) 
+      : decryptedPolicy;
+  }
+
+  // Audit view logs - mandatory for view
+  writeAuditLog(
+    user.id,
+    user.email,
+    apt.client_id,
+    "VIEW_PATIENT_RECORD",
+    apt.patient_id,
+    `Viewed detailed record for patient: ${patient ? `${patient.first_name} ${patient.last_name}` : "Unknown"}`
+  );
+
+  res.json({
+    appointment: apt,
+    patient,
+    insurance: insurance ? {
+      ...insurance,
+      policy_number: undefined,
+      policy_number_masked: maskedPolicy,
+    } : null,
+    calls
+  });
+});
+
+// Decrypt Policy number explicitly (optional, creates precise audit log)
+app.post("/api/appointments/:id/decrypt-policy", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { id } = req.params;
+  const db = loadDb();
+
+  const apt = db.appointments.find((a: any) => a.id === id);
+  if (!apt) return res.status(404).json({ error: "Appointment not found" });
+
+  if (!canAccessClient(user, apt.client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  if (user.role === "client_viewer") {
+    return res.status(403).json({ error: "Access Denied: Client viewers cannot decrypt policy numbers." });
+  }
+
+  const insurance = db.insurance_details.find((i: any) => i.appointment_id === apt.id);
+  if (!insurance) return res.status(404).json({ error: "Insurance info not found" });
+
+  const decrypted = decrypt(insurance.policy_number);
+  const patient = db.patients.find((p: any) => p.id === apt.patient_id);
+
+  writeAuditLog(
+    user.id,
+    user.email,
+    apt.client_id,
+    "DECRYPT_POLICY_NUMBER",
+    insurance.id,
+    `Decrypted policy number for patient ${patient ? `${patient.first_name} ${patient.last_name}` : "Unknown"}`
+  );
+
+  res.json({ decrypted });
+});
+
+// Promote Appointment Stage (from pending_review to in_verification)
+app.post("/api/appointments/:id/promote", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { id } = req.params;
+  const db = loadDb();
+
+  const aptIndex = db.appointments.findIndex((a: any) => a.id === id);
+  if (aptIndex === -1) return res.status(404).json({ error: "Appointment not found" });
+
+  const apt = db.appointments[aptIndex];
+
+  if (!canAccessClient(user, apt.client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  // Update status
+  const oldStatus = apt.status;
+  apt.status = "in_verification";
+  apt.updated_at = new Date().toISOString();
+
+  saveDb(db);
+
+  const patient = db.patients.find((p: any) => p.id === apt.patient_id);
+  writeAuditLog(
+    user.id,
+    user.email,
+    apt.client_id,
+    "APPOINTMENT_STAGE_PROMOTED",
+    apt.id,
+    `Promoted appointment status from ${oldStatus} to in_verification for patient ${patient ? `${patient.first_name} ${patient.last_name}` : "Unknown"}`
+  );
+
+  res.json({ success: true, appointment: apt });
+});
+
+// Submit verification call outcome & update appointment status
+app.post("/api/appointments/:id/verification-call", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { id } = req.params;
+  const { call_outcome, checklist, notes } = req.body;
+
+  if (!call_outcome) {
+    return res.status(400).json({ error: "call_outcome is required." });
+  }
+
+  const db = loadDb();
+  const aptIndex = db.appointments.findIndex((a: any) => a.id === id);
+  if (aptIndex === -1) return res.status(404).json({ error: "Appointment not found" });
+
+  const apt = db.appointments[aptIndex];
+
+  if (!canAccessClient(user, apt.client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  // Only team2_verifier or admin can perform verification calls
+  if (user.role !== "team2_verifier" && user.role !== "ops_admin" && user.role !== "super_admin") {
+    return res.status(403).json({ error: "Access Denied: Only verifiers or admins can log verification calls." });
+  }
+
+  // Create call log
+  const callId = "call_" + Math.random().toString(36).substring(2, 11);
+  const newCall = {
+    id: callId,
+    appointment_id: id,
+    verified_by: user.id,
+    call_outcome,
+    checklist: checklist || {},
+    notes: notes || "",
+    created_at: new Date().toISOString()
+  };
+
+  db.verification_calls.push(newCall);
+
+  // Update appointment status based on outcome
+  const oldStatus = apt.status;
+  if (call_outcome === "approved") {
+    apt.status = "approved";
+  } else if (call_outcome === "not_approved") {
+    apt.status = "not_approved";
+  } else {
+    // For no_answer or callback_needed, keep it in "in_verification" or return to it
+    apt.status = "in_verification";
+  }
+  apt.updated_at = new Date().toISOString();
+
+  saveDb(db);
+
+  const patient = db.patients.find((p: any) => p.id === apt.patient_id);
+  writeAuditLog(
+    user.id,
+    user.email,
+    apt.client_id,
+    "VERIFICATION_CALL_SUBMITTED",
+    id,
+    `Logged verification call with outcome "${call_outcome}". Updated appointment status from ${oldStatus} to ${apt.status} for patient ${patient ? `${patient.first_name} ${patient.last_name}` : "Unknown"}`
+  );
+
+  res.json({ success: true, appointment: apt, call: newCall });
+});
+
+// Admin API: Users and roles management (for ops_admin and super_admin)
+app.get("/api/admin/users", (req, res) => {
+  const user = (req as any).user;
+  if (!user || (user.role !== "ops_admin" && user.role !== "super_admin")) {
+    return res.status(403).json({ error: "Access Denied: Only administrators have access." });
+  }
+
+  const db = loadDb();
+  // Filter by client if ops_admin is bound (though by rule ops_admin bypasses client filters, let's keep it complete)
+  const filteredUsers = applyRls(db, user, "users", db.users);
+  res.json(filteredUsers);
+});
+
+app.post("/api/admin/users", (req, res) => {
+  const user = (req as any).user;
+  if (!user || (user.role !== "ops_admin" && user.role !== "super_admin")) {
+    return res.status(403).json({ error: "Access Denied." });
+  }
+
+  const { email, role, client_id, name, is_global, assigned_client_ids } = req.body;
+  if (!email || !role || !name) {
+    return res.status(400).json({ error: "Email, role, and name are required." });
+  }
+
+  const db = loadDb();
+  
+  // Check if user already exists
+  if (db.users.some((u: any) => u.email.toLowerCase() === email.toLowerCase())) {
+    return res.status(400).json({ error: "User with this email already exists." });
+  }
+
+  const newUser = {
+    id: "user_" + Math.random().toString(36).substring(2, 11),
+    email: email.toLowerCase(),
+    role,
+    client_id: role === "client_viewer" ? client_id : null,
+    name,
+    is_global: !!is_global,
+    assigned_client_ids: Array.isArray(assigned_client_ids) ? assigned_client_ids : [],
+    created_at: new Date().toISOString()
+  };
+
+  db.users.push(newUser);
+  saveDb(db);
+
+  writeAuditLog(
+    user.id,
+    user.email,
+    user.client_id,
+    "ADMIN_CREATE_USER",
+    newUser.id,
+    `Created new user ${newUser.name} with role ${role}`
+  );
+
+  if (role === "team1_reviewer" || role === "team2_verifier") {
+    writeAuditLog(
+      user.id,
+      user.email,
+      user.client_id,
+      "ADMIN_UPDATE_USER_ACCESS",
+      newUser.id,
+      `Access granted - is_global: false -> ${newUser.is_global}, assigned_client_ids: [] -> [${newUser.assigned_client_ids.join(",")}]`
+    );
+  }
+
+  res.json({ success: true, user: newUser });
+});
+
+app.put("/api/admin/users/:id", (req, res) => {
+  const user = (req as any).user;
+  if (!user || (user.role !== "ops_admin" && user.role !== "super_admin")) {
+    return res.status(403).json({ error: "Access Denied." });
+  }
+
+  const { id } = req.params;
+  const { role, client_id, name, is_global, assigned_client_ids } = req.body;
+
+  const db = loadDb();
+  const userIndex = db.users.findIndex((u: any) => u.id === id);
+  if (userIndex === -1) return res.status(404).json({ error: "User not found" });
+
+  const targetUser = db.users[userIndex];
+  
+  // Record changes
+  const changes = [];
+  if (name && name !== targetUser.name) {
+    changes.push(`name to ${name}`);
+    targetUser.name = name;
+  }
+  if (role && role !== targetUser.role) {
+    changes.push(`role to ${role}`);
+    targetUser.role = role;
+  }
+  if (client_id !== undefined && client_id !== targetUser.client_id) {
+    changes.push(`client_id to ${client_id}`);
+    targetUser.client_id = client_id;
+  }
+
+  let accessChanged = false;
+  const oldIsGlobal = targetUser.is_global;
+  const oldAssigned = targetUser.assigned_client_ids || [];
+
+  if (is_global !== undefined && is_global !== targetUser.is_global) {
+    targetUser.is_global = is_global;
+    accessChanged = true;
+  }
+  if (assigned_client_ids !== undefined && JSON.stringify(assigned_client_ids) !== JSON.stringify(targetUser.assigned_client_ids)) {
+    targetUser.assigned_client_ids = assigned_client_ids;
+    accessChanged = true;
+  }
+
+  saveDb(db);
+
+  writeAuditLog(
+    user.id,
+    user.email,
+    user.client_id,
+    "ADMIN_UPDATE_USER",
+    id,
+    `Updated user ${targetUser.email}: ${changes.join(", ")}`
+  );
+
+  if (accessChanged) {
+    writeAuditLog(
+      user.id,
+      user.email,
+      user.client_id,
+      "ADMIN_UPDATE_USER_ACCESS",
+      id,
+      `Access updated - is_global: ${oldIsGlobal} -> ${targetUser.is_global}, assigned_client_ids: [${oldAssigned.join(",")}] -> [${(targetUser.assigned_client_ids || []).join(",")}]`
+    );
+  }
+
+  res.json({ success: true, user: targetUser });
+});
+
+app.delete("/api/admin/users/:id", (req, res) => {
+  const user = (req as any).user;
+  if (!user || (user.role !== "ops_admin" && user.role !== "super_admin")) {
+    return res.status(403).json({ error: "Access Denied." });
+  }
+
+  const { id } = req.params;
+  
+  if (id === user.id) {
+    return res.status(400).json({ error: "Cannot delete your own user account." });
+  }
+
+  const db = loadDb();
+  const targetUser = db.users.find((u: any) => u.id === id);
+  if (!targetUser) return res.status(404).json({ error: "User not found" });
+
+  db.users = db.users.filter((u: any) => u.id !== id);
+  saveDb(db);
+  deleteFromFirestore("users", id).catch(err => console.error(err));
+
+  writeAuditLog(
+    user.id,
+    user.email,
+    user.client_id,
+    "ADMIN_DELETE_USER",
+    id,
+    `Deleted user account: ${targetUser.email}`
+  );
+
+  res.json({ success: true });
+});
+
+// Super Admin API: Audit Logs (only super_admin can see this)
+app.get("/api/admin/audit-logs", (req, res) => {
+  const user = (req as any).user;
+  if (!user || user.role !== "super_admin") {
+    return res.status(403).json({ error: "Access Denied: Only Super Administrators can view audit logs." });
+  }
+
+  const db = loadDb();
+  // Filter by RLS just in case, though super_admin sees all
+  const filteredLogs = applyRls(db, user, "audit_log", db.audit_log);
+  res.json(filteredLogs);
+});
+
+// Clear Logs (optional super-admin action)
+app.post("/api/admin/audit-logs/clear", (req, res) => {
+  const user = (req as any).user;
+  if (!user || user.role !== "super_admin") {
+    return res.status(403).json({ error: "Access Denied." });
+  }
+
+  const db = loadDb();
+  db.audit_log = [
+    {
+      id: "audit_" + Math.random().toString(36).substring(2, 11),
+      user_id: user.id,
+      user_email: user.email,
+      client_id: null,
+      action: "AUDIT_LOG_CLEARED",
+      record_id: "audit",
+      details: "Audit logs were cleared by Super Admin.",
+      created_at: new Date().toISOString()
+    }
+  ];
+  
+  if (useFirestore && firestoreDb) {
+    getDocs(collection(firestoreDb, "audit_log"))
+      .then(snap => {
+        snap.docs.forEach(d => deleteDoc(d.ref).catch(e => console.error(e)));
+      })
+      .catch(err => console.error("Error clearing cloud audit_log:", err));
+  }
+
+  saveDb(db);
+  res.json({ success: true, logs: db.audit_log });
+});
+
+// Export Patients Action - writes audit logs
+app.post("/api/appointments/export", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids)) {
+    return res.status(400).json({ error: "Array of appointment IDs is required." });
+  }
+
+  const db = loadDb();
+  const appointments = db.appointments.filter((a: any) => ids.includes(a.id));
+  
+  // Verify client restriction
+  const isViolating = appointments.some((a: any) => !canAccessClient(user, a.client_id));
+  if (isViolating) {
+    return res.status(403).json({ error: "Access Denied: Attempting to export patient records belonging to other clients." });
+  }
+
+  // Record export audit
+  writeAuditLog(
+    user.id,
+    user.email,
+    user.role === "client_viewer" ? user.client_id : null,
+    "EXPORT_PATIENT_RECORDS",
+    "multiple",
+    `Exported ${appointments.length} patient appointments/insurance details.`
+  );
+
+  res.json({ success: true, count: appointments.length });
+});
+
+// Vite & Static file serve setup
+async function startServer() {
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`InsureTrack Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();

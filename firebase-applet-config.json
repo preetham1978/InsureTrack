@@ -1,0 +1,12 @@
+{
+  "projectId": "veloai-prod",
+  "appId": "1:994687633140:web:8ccf16544def1ea33180a1",
+  "apiKey": "AIzaSyAJyqY6teICfKVDiNmqvKMSp2xT_5EMy9A",
+  "authDomain": "veloai-prod.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-insuretrack-e8e4007c-ee75-41c9-8e1c-56b1cebe5d46",
+  "storageBucket": "veloai-prod.firebasestorage.app",
+  "messagingSenderId": "994687633140",
+  "measurementId": "",
+  "oAuthClientId": "994687633140-jkr9pf2tuqjaqurtc417fi5o4eu7ff3d.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
+}

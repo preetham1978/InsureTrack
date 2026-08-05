@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "Client": {
+      "title": "Client",
+      "description": "Client organization",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      }
+    },
+    "User": {
+      "title": "User",
+      "description": "User entity",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "clients/{clientId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Clients collection"
+    },
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Users collection"
+    },
+    "import_batches/{batchId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Import batches"
+    },
+    "patients/{patientId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Patients"
+    },
+    "appointments/{appointmentId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Appointments"
+    },
+    "insurance_details/{insuranceId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Insurance details"
+    },
+    "verification_calls/{callId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Verification calls"
+    },
+    "audit_log/{logId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Audit logs"
+    }
+  }
+}

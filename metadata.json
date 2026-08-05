@@ -1,0 +1,6 @@
+{
+  "name": "InsureTrack",
+  "description": "Multi-tenant B2B health insurance tracking and verification dashboard for healthcare revenue cycle management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
