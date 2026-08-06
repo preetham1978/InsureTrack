@@ -1499,6 +1499,126 @@ app.post("/api/appointments/:id/promote", (req, res) => {
   res.json({ success: true, appointment: apt });
 });
 
+// FEATURE A: Get Denial Risk Assessment for an appointment based on historical carrier verification calls
+app.get("/api/appointments/:id/denial-risk", async (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { id } = req.params;
+  const db = loadDb();
+
+  const apt = db.appointments.find((a: any) => a.id === id);
+  if (!apt) {
+    return res.status(404).json({ error: "Appointment not found" });
+  }
+
+  if (!canAccessClient(user, apt.client_id)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  const insurance = db.insurance_details.find((i: any) => i.appointment_id === apt.id);
+  if (!insurance || !insurance.carrier_name) {
+    return res.json({ insufficientData: true, message: "Insurance carrier information is missing for this appointment." });
+  }
+
+  const carrierName = insurance.carrier_name;
+
+  // Find all appointments for THIS CLIENT ONLY with the same carrier_name (never cross-client)
+  const clientAppointments = db.appointments.filter((a: any) => a.client_id === apt.client_id);
+  const clientAppointmentIds = new Set(clientAppointments.map((a: any) => a.id));
+
+  const clientInsurances = db.insurance_details.filter((i: any) => clientAppointmentIds.has(i.appointment_id) && i.carrier_name === carrierName);
+  const carrierApptIds = new Set(clientInsurances.map((i: any) => i.appointment_id));
+
+  // Find all verification calls for those appointments
+  const historicalCalls = db.verification_calls.filter((c: any) => carrierApptIds.has(c.appointment_id));
+
+  const MIN_CALLS = 5;
+  if (historicalCalls.length < MIN_CALLS) {
+    return res.json({
+      insufficientData: true,
+      carrierName,
+      totalCalls: historicalCalls.length,
+      minimumRequired: MIN_CALLS,
+      message: `Insufficient historical verification data for carrier '${carrierName}' under client (found ${historicalCalls.length} prior calls, minimum ${MIN_CALLS} required).`
+    });
+  }
+
+  // Aggregate outcome counts
+  let approvedCount = 0;
+  let notApprovedCount = 0;
+  let otherCount = 0;
+  const denialNotes: string[] = [];
+
+  historicalCalls.forEach((c: any) => {
+    if (c.call_outcome === "approved") {
+      approvedCount++;
+    } else if (c.call_outcome === "not_approved") {
+      notApprovedCount++;
+      if (c.notes) {
+        // Strip anything resembling proper names (simple heuristic capitalizing words)
+        const sanitized = c.notes.replace(/\b([A-Z][a-z]+)\b/g, "[redacted]");
+        denialNotes.push(sanitized);
+      }
+    } else {
+      otherCount++;
+    }
+  });
+
+  try {
+    const prompt = `You are an expert medical billing compliance and claims denial analyst.
+Analyze the historical verification outcomes for insurance carrier "${carrierName}" for this healthcare client.
+Total Historical Calls: ${historicalCalls.length}
+- Approved: ${approvedCount}
+- Not Approved / Denied: ${notApprovedCount}
+- Other / Callback: ${otherCount}
+
+Excerpts from past denial/not_approved call notes (aggregated reasons):
+Do not quote, closely paraphrase, or reproduce any specific sentence from the notes below. Describe only recurring categories of reasons in your own general language, without referencing any single call.
+${denialNotes.slice(0, 10).join("\n- ")}
+
+Assess whether this carrier shows a historically elevated denial pattern.
+Return a JSON object with:
+- "isElevatedRisk": boolean
+- "riskLevel": string ("Low", "Moderate", "Elevated")
+- "explanation": string (A clear, plain-language explanation of WHY the risk flag is raised, referencing historical denial rates or common patterns. Never just a bare score.)
+- "commonDenialReasons": array of strings (common reasons or missing documentation noted in past denials)
+`;
+
+    const aiRes = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const analysis = JSON.parse(aiRes.text || "{}");
+    res.json({
+      insufficientData: false,
+      carrierName,
+      totalCalls: historicalCalls.length,
+      approvedCount,
+      notApprovedCount,
+      ...analysis
+    });
+  } catch (err) {
+    console.error("AI denial risk analysis failed:", err);
+    const denialRate = notApprovedCount / historicalCalls.length;
+    res.json({
+      insufficientData: false,
+      carrierName,
+      totalCalls: historicalCalls.length,
+      approvedCount,
+      notApprovedCount,
+      isElevatedRisk: denialRate > 0.3,
+      riskLevel: denialRate > 0.3 ? "Elevated" : "Low",
+      explanation: `Based on ${historicalCalls.length} historical verification calls for ${carrierName}, ${notApprovedCount} resulted in non-approval (${Math.round(denialRate * 100)}% denial rate).`,
+      commonDenialReasons: ["Prior authorization required", "Missing benefit details"]
+    });
+  }
+});
+
 // Submit verification call outcome & update appointment status
 app.post("/api/appointments/:id/verification-call", (req, res) => {
   const user = (req as any).user;
@@ -1811,6 +1931,187 @@ app.post("/api/appointments/export", (req, res) => {
   );
 
   res.json({ success: true, count: appointments.length });
+});
+
+// FEATURE B: Get Billing & Claims Anomalies for a Client (Ops Admin / Super Admin only)
+app.get("/api/clients/:id/billing-anomalies", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  if (user.role !== "ops_admin" && user.role !== "super_admin") {
+    return res.status(403).json({ error: "Access Denied: Only Ops Admins or Super Admins can access billing anomaly reviews." });
+  }
+
+  const { id: clientId } = req.params;
+  const db = loadDb();
+
+  const client = db.clients.find((c: any) => c.id === clientId);
+  if (!client) {
+    return res.status(404).json({ error: "Client not found" });
+  }
+
+  if (!canAccessClient(user, clientId)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  if (!db.billing_anomalies) {
+    db.billing_anomalies = [];
+  }
+
+  const appointments = db.appointments.filter((a: any) => a.client_id === clientId);
+  const patients = db.patients.filter((p: any) => p.client_id === clientId);
+  const apptIds = new Set(appointments.map((a: any) => a.id));
+  const insurances = db.insurance_details.filter((i: any) => apptIds.has(i.appointment_id));
+
+  const currentAnomalies: any[] = [];
+
+  // 1. Detect duplicate appointments (same patient, same date, same carrier)
+  const seenMap = new Map<string, any[]>();
+  appointments.forEach((apt: any) => {
+    const ins = insurances.find((i: any) => i.appointment_id === apt.id);
+    const carrier = ins ? ins.carrier_name : "Unknown";
+    const key = `${apt.patient_id}_${apt.appointment_date}_${carrier}`;
+    if (!seenMap.has(key)) {
+      seenMap.set(key, []);
+    }
+    seenMap.get(key)!.push({ appointment: apt, carrier });
+  });
+
+  seenMap.forEach((group) => {
+    if (group.length > 1) {
+      const firstApt = group[0].appointment;
+      const patient = patients.find((p: any) => p.id === firstApt.patient_id);
+      const carrier = group[0].carrier;
+      // Deterministic stable ID based on patient_id + appointment_date + carrier
+      const stableId = "anomaly_dup_" + crypto.createHash("md5").update(`${clientId}_${firstApt.patient_id}_${firstApt.appointment_date}_${carrier}`).digest("hex").substring(0, 8);
+
+      let existing = db.billing_anomalies.find((a: any) => a.id === stableId);
+      if (!existing) {
+        existing = {
+          id: stableId,
+          client_id: clientId,
+          type: "duplicate_pattern",
+          severity: "Moderate",
+          title: "Duplicate Appointment Date Pattern Detected",
+          description: `Patient ${patient ? `${patient.first_name} ${patient.last_name}` : firstApt.patient_id} has ${group.length} appointments scheduled on the exact same date (${firstApt.appointment_date}) with carrier ${carrier}. This unusual pattern worth reviewing helps prevent duplicate claims submissions.`,
+          appointmentIds: group.map((g: any) => g.appointment.id),
+          status: "Pending Review",
+          created_at: new Date().toISOString()
+        };
+        db.billing_anomalies.push(existing);
+      }
+      currentAnomalies.push(existing);
+    }
+  });
+
+  // 2. Detect provider high denial ratio or volume spikes (minimum 5 total appointments for that provider before flagging)
+  const providerMap = new Map<string, { total: number; denied: number; carrierSet: Set<string> }>();
+  appointments.forEach((apt: any) => {
+    const prov = apt.provider_name || "Unknown Provider";
+    if (!providerMap.has(prov)) {
+      providerMap.set(prov, { total: 0, denied: 0, carrierSet: new Set() });
+    }
+    const stat = providerMap.get(prov)!;
+    stat.total++;
+    if (apt.status === "not_approved") {
+      stat.denied++;
+    }
+    const ins = insurances.find((i: any) => i.appointment_id === apt.id);
+    if (ins) stat.carrierSet.add(ins.carrier_name);
+  });
+
+  providerMap.forEach((stat, provider) => {
+    // Standard minimum sample size threshold of 5 total appointments
+    if (stat.total >= 5 && stat.denied >= 2 && (stat.denied / stat.total) >= 0.5) {
+      const stableId = "anomaly_prov_" + crypto.createHash("md5").update(`${clientId}_${provider}`).digest("hex").substring(0, 8);
+
+      let existing = db.billing_anomalies.find((a: any) => a.id === stableId);
+      if (!existing) {
+        existing = {
+          id: stableId,
+          client_id: clientId,
+          type: "provider_denial_cluster",
+          severity: "Elevated",
+          title: `Elevated Non-Approval Cluster for ${provider}`,
+          description: `Provider ${provider} has ${stat.denied} non-approved outcomes out of ${stat.total} total appointments (${Math.round((stat.denied / stat.total) * 100)}% denial rate across sample size of ${stat.total} appointments). This unusual pattern worth reviewing indicates potential authorization or documentation gaps.`,
+          providerName: provider,
+          status: "Pending Review",
+          created_at: new Date().toISOString()
+        };
+        db.billing_anomalies.push(existing);
+      }
+      currentAnomalies.push(existing);
+    }
+  });
+
+  saveDb(db);
+
+  res.json({
+    clientId,
+    clientName: client.name,
+    totalAppointments: appointments.length,
+    anomalies: currentAnomalies
+  });
+});
+
+// FEATURE B: Review Billing Anomaly
+app.post("/api/clients/:id/billing-anomalies/review", (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  if (user.role !== "ops_admin" && user.role !== "super_admin") {
+    return res.status(403).json({ error: "Access Denied: Only Ops Admins or Super Admins can review billing anomalies." });
+  }
+
+  const { id: clientId } = req.params;
+  const { anomalyId, reviewStatus, notes } = req.body;
+
+  if (!anomalyId || !reviewStatus) {
+    return res.status(400).json({ error: "anomalyId and reviewStatus are required." });
+  }
+
+  const db = loadDb();
+  const client = db.clients.find((c: any) => c.id === clientId);
+  if (!client) return res.status(404).json({ error: "Client not found" });
+
+  if (!canAccessClient(user, clientId)) {
+    return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
+  }
+
+  if (!db.billing_anomalies) {
+    db.billing_anomalies = [];
+  }
+
+  let anomaly = db.billing_anomalies.find((a: any) => a.id === anomalyId);
+  if (anomaly) {
+    anomaly.status = reviewStatus;
+    anomaly.review_notes = notes || "";
+    anomaly.reviewed_by = user.email;
+    anomaly.reviewed_at = new Date().toISOString();
+  } else {
+    anomaly = {
+      id: anomalyId,
+      client_id: clientId,
+      status: reviewStatus,
+      review_notes: notes || "",
+      reviewed_by: user.email,
+      reviewed_at: new Date().toISOString()
+    };
+    db.billing_anomalies.push(anomaly);
+  }
+
+  writeAuditLog(
+    user.id,
+    user.email,
+    clientId,
+    "REVIEW_BILLING_ANOMALY",
+    anomalyId,
+    `Reviewed billing anomaly ${anomalyId} for client ${client.name} with status: "${reviewStatus}". Notes: ${notes || "None"}`
+  );
+
+  saveDb(db);
+
+  res.json({ success: true, status: reviewStatus });
 });
 
 // Vite & Static file serve setup

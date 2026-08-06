@@ -148,6 +148,14 @@ export const api = {
     return res.json();
   },
 
+  async getDenialRisk(id: string) {
+    const res = await fetch(`${API_BASE}/api/appointments/${id}/denial-risk`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to load denial risk analysis");
+    return res.json();
+  },
+
   // Appointments / Queue API
   async getAppointments() {
     const res = await fetch(`${API_BASE}/api/appointments`, { headers: getHeaders() });
@@ -269,6 +277,28 @@ export const api = {
   async getAuditLogs() {
     const res = await fetch(`${API_BASE}/api/admin/audit-logs`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to fetch system audit logs");
+    return res.json();
+  },
+
+  async getBillingAnomalies(clientId: string) {
+    const res = await fetch(`${API_BASE}/api/clients/${clientId}/billing-anomalies`, { headers: getHeaders() });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to load billing anomalies");
+    }
+    return res.json();
+  },
+
+  async reviewBillingAnomaly(clientId: string, anomalyId: string, reviewStatus: string, notes?: string) {
+    const res = await fetch(`${API_BASE}/api/clients/${clientId}/billing-anomalies/review`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ anomalyId, reviewStatus, notes }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to submit anomaly review");
+    }
     return res.json();
   },
 

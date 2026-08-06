@@ -49,12 +49,27 @@ export default function WorkspaceScreen({ user, appointmentId, onBack }: Workspa
   
   const [generatedScript, setGeneratedScript] = useState<string | null>(null);
   const [generatingScript, setGeneratingScript] = useState(false);
+  const [denialRisk, setDenialRisk] = useState<any>(null);
+  const [loadingRisk, setLoadingRisk] = useState(false);
+
+  const loadDenialRisk = async () => {
+    setLoadingRisk(true);
+    try {
+      const riskData = await api.getDenialRisk(appointmentId);
+      setDenialRisk(riskData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingRisk(false);
+    }
+  };
 
   const loadDetail = async () => {
     setLoading(true);
     try {
       const data = await api.getAppointmentDetail(appointmentId);
       setDetail(data);
+      loadDenialRisk();
       
       // Auto pre-populate from previous calls if exist
       if (data.calls && data.calls.length > 0) {
@@ -377,6 +392,55 @@ export default function WorkspaceScreen({ user, appointmentId, onBack }: Workspa
             ) : (
               <form onSubmit={handleSubmitOutcome} className="p-5 space-y-4">
                 
+                {/* Historical Denial Pattern Advisory Panel */}
+                <div className="bg-amber-950/20 border border-amber-800/60 rounded-xl p-3.5 shadow-md">
+                  <div className="flex items-center space-x-2 mb-1.5">
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <h4 className="font-bold text-xs text-amber-200 uppercase tracking-wide">Historical Denial Pattern — Review Before Calling</h4>
+                  </div>
+                  <div className="text-xs text-slate-300 space-y-1.5">
+                    <p className="text-[10px] text-amber-300/80 italic">
+                      Note: Pattern-based flag for human review, not a determination.
+                    </p>
+                    {loadingRisk ? (
+                      <div className="flex items-center space-x-2 text-slate-400 py-1">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                        <span className="text-[11px]">Analyzing historical carrier outcomes...</span>
+                      </div>
+                    ) : denialRisk?.insufficientData ? (
+                      <p className="text-slate-400 italic text-[11px]">
+                        {denialRisk.message || "Insufficient historical verification data for this carrier."}
+                      </p>
+                    ) : denialRisk ? (
+                      <div className="space-y-1.5 pt-1 border-t border-amber-900/40 text-[11px]">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-white">Carrier: {denialRisk.carrierName}</span>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${
+                            denialRisk.riskLevel === "Elevated" ? "bg-rose-950/60 text-rose-300 border-rose-800" :
+                            denialRisk.riskLevel === "Moderate" ? "bg-amber-950/60 text-amber-300 border-amber-800" :
+                            "bg-emerald-950/60 text-emerald-300 border-emerald-800"
+                          }`}>
+                            Risk: {denialRisk.riskLevel || "Standard"}
+                          </span>
+                        </div>
+                        <p className="text-slate-200 leading-relaxed">
+                          {denialRisk.explanation}
+                        </p>
+                        {denialRisk.commonDenialReasons && denialRisk.commonDenialReasons.length > 0 && (
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-amber-400 block mb-0.5">Common Past Denial Reasons / Missing Docs:</span>
+                            <ul className="list-disc list-inside space-y-0.5 text-slate-300 text-[10px]">
+                              {denialRisk.commonDenialReasons.map((reason: string, i: number) => (
+                                <li key={i}>{reason}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
                 {/* 1. Interactive checklist */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
