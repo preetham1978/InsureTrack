@@ -1284,6 +1284,13 @@ app.post("/api/import-batches/check-duplicates", (req, res) => {
     return res.status(400).json({ error: "client_id and rows array are required." });
   }
 
+  const MAX_DUPLICATE_CHECK_ROWS = 500;
+  if (rows.length > MAX_DUPLICATE_CHECK_ROWS) {
+    return res.status(400).json({
+      error: `Too many rows for duplicate checking in a single request (max ${MAX_DUPLICATE_CHECK_ROWS}). Please split this import into smaller batches.`
+    });
+  }
+
   if (!canAccessClient(user, client_id)) {
     return res.status(403).json({ error: "Access Denied: Not assigned to this client." });
   }
