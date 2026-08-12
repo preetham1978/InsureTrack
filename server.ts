@@ -22,6 +22,18 @@ setLogLevel("silent");
 
 const app = express();
 const PORT = 3000;
+
+// Basic security headers on every response.
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'"
+  );
+  next();
+});
 const DB_FILE = path.join(process.cwd(), "database.json");
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -484,7 +496,7 @@ async function initializeAndSyncDb() {
       
       if (clientsSnap.empty) {
         console.log("[FIREBASE] Cloud database is empty. Performing automatic database.json to Firestore migration...");
-        const collections = ["clients", "users", "import_batches", "patients", "appointments", "insurance_details", "verification_calls", "audit_log"];
+        const collections = ["clients", "users", "import_batches", "patients", "appointments", "insurance_details", "verification_calls", "audit_log", "migrations"];
         
         for (const colName of collections) {
           const items = localDb[colName] || [];
@@ -586,7 +598,7 @@ function saveDb(db: any) {
   // Asynchronously propagate all local mutations to Cloud Firestore
   if (useFirestore && firestoreDb) {
     setTimeout(() => {
-      const collections = ["clients", "users", "import_batches", "patients", "appointments", "insurance_details", "verification_calls", "audit_log"];
+      const collections = ["clients", "users", "import_batches", "patients", "appointments", "insurance_details", "verification_calls", "audit_log", "migrations"];
       for (const colName of collections) {
         const items = db[colName] || [];
         for (const item of items) {
@@ -1522,6 +1534,13 @@ app.post("/api/appointments/:id/promote", (req, res) => {
   const aptIndex = db.appointments.findIndex((a: any) => a.id === id);
   if (aptIndex === -1) return res.status(404).json({ error: "Appointment not found" });
 
+  const currentAppointment = db.appointments[aptIndex];
+  if (currentAppointment.status !== "pending_review") {
+    return res.status(400).json({
+      error: `Cannot promote appointment from status "${currentAppointment.status}". Only appointments in "pending_review" can be promoted to "in_verification".`
+    });
+  }
+
   const apt = db.appointments[aptIndex];
 
   if (!canAccessClient(user, apt.client_id)) {
@@ -1934,35 +1953,7 @@ app.get("/api/admin/audit-logs", (req, res) => {
 
 // Clear Logs (optional super-admin action)
 app.post("/api/admin/audit-logs/clear", (req, res) => {
-  const user = (req as any).user;
-  if (!user || user.role !== "super_admin") {
-    return res.status(403).json({ error: "Access Denied." });
-  }
-
-  const db = loadDb();
-  db.audit_log = [
-    {
-      id: "audit_" + Math.random().toString(36).substring(2, 11),
-      user_id: user.id,
-      user_email: user.email,
-      client_id: null,
-      action: "AUDIT_LOG_CLEARED",
-      record_id: "audit",
-      details: "Audit logs were cleared by Super Admin.",
-      created_at: new Date().toISOString()
-    }
-  ];
-  
-  if (useFirestore && firestoreDb) {
-    getDocs(collection(firestoreDb, "audit_log"))
-      .then(snap => {
-        snap.docs.forEach(d => deleteDoc(d.ref).catch(e => console.error(e)));
-      })
-      .catch(err => console.error("Error clearing cloud audit_log:", err));
-  }
-
-  saveDb(db);
-  res.json({ success: true, logs: db.audit_log });
+  return res.status(403).json({ error: "Audit logs are append-only and cannot be cleared." });
 });
 
 // Export Patients Action - writes audit logs
@@ -1977,14 +1968,43 @@ app.post("/api/appointments/export", (req, res) => {
 
   const db = loadDb();
   const appointments = db.appointments.filter((a: any) => ids.includes(a.id));
-  
-  // Verify client restriction
+
   const isViolating = appointments.some((a: any) => !canAccessClient(user, a.client_id));
   if (isViolating) {
     return res.status(403).json({ error: "Access Denied: Attempting to export patient records belonging to other clients." });
   }
 
-  // Record export audit
+  // Build the exported record set server-side, so the audit log below always
+  // reflects exactly what leaves the system.
+  const records = appointments.map((apt: any) => {
+    const patient = db.patients.find((p: any) => p.id === apt.patient_id);
+    const insurance = db.insurance_details.find((i: any) => i.appointment_id === apt.id);
+    let maskedPolicy = "••••••••";
+    if (insurance) {
+      const decrypted = decrypt(insurance.policy_number);
+      maskedPolicy = decrypted.length > 4 ? "••••" + decrypted.slice(-4) : decrypted;
+    }
+    return {
+      ...apt,
+      patient: patient ? {
+        id: patient.id,
+        first_name: patient.first_name,
+        last_name: patient.last_name,
+        dob: patient.dob,
+        gender: patient.gender
+      } : null,
+      insurance: insurance ? {
+        id: insurance.id,
+        carrier_name: insurance.carrier_name,
+        policy_number_masked: maskedPolicy,
+        group_number: insurance.group_number,
+        subscriber_name: insurance.subscriber_name,
+        subscriber_dob: insurance.subscriber_dob,
+        relationship: insurance.relationship
+      } : null
+    };
+  });
+
   writeAuditLog(
     user.id,
     user.email,
@@ -1994,7 +2014,7 @@ app.post("/api/appointments/export", (req, res) => {
     `Exported ${appointments.length} patient appointments/insurance details.`
   );
 
-  res.json({ success: true, count: appointments.length });
+  res.json({ success: true, count: appointments.length, records });
 });
 
 // FEATURE B: Get Billing & Claims Anomalies for a Client (Ops Admin / Super Admin only)

@@ -99,7 +99,7 @@ export default function QueueScreen({ user, onNavigateToWorkspace, clientIdFilte
       if (res.success) {
         setSuccessMsg(`Successfully generated and logged export for ${res.count} patient records.`);
         // Simulate a file download
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appointments.filter(a => selectedApts.includes(a.id)), null, 2));
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(res.records, null, 2));
         const downloadAnchor = document.createElement('a');
         downloadAnchor.setAttribute("href", dataStr);
         downloadAnchor.setAttribute("download", `exported_patients_${new Date().toISOString().split('T')[0]}.json`);

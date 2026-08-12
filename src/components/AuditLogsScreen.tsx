@@ -66,10 +66,19 @@ export default function AuditLogsScreen() {
   const handleExportCsv = () => {
     if (logs.length === 0) return;
     
-    // Simple CSV generator
+    // Helper to sanitize fields against CSV formula injection (=, +, -, @, tab, CR)
+    const sanitizeCell = (val: string | null | undefined) => {
+      if (!val) return '""';
+      let str = String(val).replace(/"/g, '""');
+      if (/^[=+\-@\t\r]/.test(str)) {
+        str = "'" + str;
+      }
+      return `"${str}"`;
+    };
+
     const csvHeaders = "Log ID,User ID,User Email,Client ID,Action,Record ID,Details,Timestamp\n";
     const csvRows = logs.map(l => {
-      return `"${l.id}","${l.user_id}","${l.user_email}","${l.client_id || ""}","${l.action}","${l.record_id}","${l.details.replace(/"/g, '""')}","${l.created_at}"`;
+      return `${sanitizeCell(l.id)},${sanitizeCell(l.user_id)},${sanitizeCell(l.user_email)},${sanitizeCell(l.client_id)},${sanitizeCell(l.action)},${sanitizeCell(l.record_id)},${sanitizeCell(l.details)},${sanitizeCell(l.created_at)}`;
     }).join("\n");
     
     const blob = new Blob([csvHeaders + csvRows], { type: "text/csv;charset=utf-8;" });
