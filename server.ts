@@ -27,40 +27,44 @@ const DB_FILE = path.join(process.cwd(), "database.json");
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // Simple Reversible Encryption for Policy Numbers
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "veloai_insure_track_secret_1234"; // 32 chars limit or simple algorithm
-// We will use standard AES-256-CTR or a simpler robust hex-shifting representation to ensure absolute stability in Node.js
+const ENCRYPTION_KEY_RAW = process.env.ENCRYPTION_KEY;
+if (!ENCRYPTION_KEY_RAW) {
+  console.error("[SECURITY] ENCRYPTION_KEY is not set. Policy-number encryption/decryption will fail until it is configured.");
+}
+const ENCRYPTION_KEY = ENCRYPTION_KEY_RAW ? Buffer.from(ENCRYPTION_KEY_RAW.padEnd(32, "0").slice(0, 32)) : null;
+
 function encrypt(text: string): string {
+  if (!ENCRYPTION_KEY) return "enc_failed:" + text;
   try {
-    const cipher = crypto.createCipheriv(
-      "aes-256-cbc",
-      Buffer.from(ENCRYPTION_KEY.padEnd(32, "0").slice(0, 32)),
-      Buffer.alloc(16, 0) // zero initialization vector for simplicity of demonstration
-    );
+    const iv = crypto.randomBytes(16); // unique, random IV per record
+    const cipher = crypto.createCipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
     let encrypted = cipher.update(text, "utf8", "hex");
     encrypted += cipher.final("hex");
-    return "enc:" + encrypted;
+    return "encv2:" + iv.toString("hex") + ":" + encrypted;
   } catch (err) {
     return "enc_failed:" + text;
   }
 }
 
 function decrypt(cipherText: string): string {
+  if (cipherText.startsWith("encv2:")) {
+    if (!ENCRYPTION_KEY) return "decryption_error";
+    try {
+      const [, ivHex, dataHex] = cipherText.split(":");
+      const iv = Buffer.from(ivHex, "hex");
+      const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
+      let decrypted = decipher.update(dataHex, "hex", "utf8");
+      decrypted += decipher.final("utf8");
+      return decrypted;
+    } catch (err) {
+      return "decryption_error";
+    }
+  }
   if (!cipherText.startsWith("enc:")) {
     return cipherText;
   }
-  try {
-    const rawHex = cipherText.substring(4);
-    const decipher = crypto.createDecipheriv(
-      "aes-256-cbc",
-      Buffer.from(ENCRYPTION_KEY.padEnd(32, "0").slice(0, 32)),
-      Buffer.alloc(16, 0)
-    );
-    let decrypted = decipher.update(rawHex, "hex", "utf8");
-    decrypted += decipher.final("utf8");
-    return decrypted;
-  } catch (err) {
-    return "decryption_error";
-  }
+  // Old, weaker encryption format — no longer supported once the key rotates.
+  return "decryption_error";
 }
 
 // Ensure database file exists with initial mock data
@@ -772,6 +776,11 @@ app.get("/api/auth/me", (req, res) => {
 // Row Level Security Validation test endpoint
 // "Build and TEST this RLS policy before building any UI screen."
 app.get("/api/test-rls", (req, res) => {
+  const user = (req as any).user;
+  if (!user || user.role !== "super_admin") {
+    return res.status(403).json({ error: "Access Denied: Only a Super Admin can run this test suite." });
+  }
+
   const db = loadDb();
   const results: any[] = [];
   
@@ -1751,6 +1760,11 @@ app.post("/api/admin/users", (req, res) => {
     return res.status(400).json({ error: "Email, role, and name are required." });
   }
 
+  // Only a Super Admin may create another Super Admin account.
+  if (role === "super_admin" && user.role !== "super_admin") {
+    return res.status(403).json({ error: "Access Denied: Only a Super Admin can grant the Super Admin role." });
+  }
+
   const db = loadDb();
   
   // Check if user already exists
@@ -1810,6 +1824,16 @@ app.put("/api/admin/users/:id", (req, res) => {
 
   const targetUser = db.users[userIndex];
   
+  // A user may not change their own role — prevents self-escalation.
+  if (role && role !== targetUser.role && id === user.id) {
+    return res.status(403).json({ error: "Access Denied: You cannot change your own role." });
+  }
+
+  // Only a Super Admin may grant the Super Admin role to anyone.
+  if (role === "super_admin" && user.role !== "super_admin") {
+    return res.status(403).json({ error: "Access Denied: Only a Super Admin can grant the Super Admin role." });
+  }
+
   // Record changes
   const changes = [];
   if (name && name !== targetUser.name) {
