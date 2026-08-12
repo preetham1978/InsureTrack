@@ -653,6 +653,33 @@ app.use((req, res, next) => {
 
 const otpStore = new Map<string, { otp: string; expiresAt: number }>();
 
+// --- Lightweight in-memory rate limiting -----------------------------------
+// Per-email attempt caps for the two auth endpoints. Fine for a single-
+// instance demo/dev deployment; swap for a real rate-limit library backed
+// by Redis (or similar) before running more than one instance.
+const loginAttempts = new Map<string, { count: number; windowStart: number }>();
+const verifyAttempts = new Map<string, { count: number; windowStart: number }>();
+const RATE_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_LOGIN_REQUESTS = 5;
+const MAX_VERIFY_ATTEMPTS = 5;
+
+function checkRateLimit(
+  store: Map<string, { count: number; windowStart: number }>,
+  key: string,
+  max: number
+): boolean {
+  const now = Date.now();
+  const entry = store.get(key);
+  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
+    store.set(key, { count: 1, windowStart: now });
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
+// -----------------------------------------------------------------------------
+
 // Authentication APIs
 app.post("/api/auth/login", (req, res) => {
   const { email } = req.body;
@@ -660,8 +687,13 @@ app.post("/api/auth/login", (req, res) => {
     return res.status(400).json({ error: "Email is required" });
   }
 
+  const normalizedEmail = email.toLowerCase();
+  if (!checkRateLimit(loginAttempts, normalizedEmail, MAX_LOGIN_REQUESTS)) {
+    return res.status(429).json({ error: "Too many login requests. Please try again in a few minutes." });
+  }
+
   const db = loadDb();
-  const user = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+  const user = db.users.find((u: any) => u.email.toLowerCase() === normalizedEmail);
 
   if (!user) {
     return res.status(404).json({
@@ -671,12 +703,15 @@ app.post("/api/auth/login", (req, res) => {
   }
 
   const otp = crypto.randomInt(100000, 999999).toString();
-  otpStore.set(email.toLowerCase(), { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+  otpStore.set(normalizedEmail, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
 
-  console.log(`[AUTH] Secure OTP sent to email for ${email} (OTP: ${otp})`);
+  console.log(`[AUTH] OTP generated for ${email} (OTP: ${otp})`);
 
-  const responsePayload: any = { message: "OTP sent to your email", email };
-  responsePayload.devOtp = otp; // Always return for demo purposes
+  // DEMO MODE: the real OTP is returned in the response so client demos can
+  // proceed without a wired-up email provider. Remove this line (and require
+  // the real inbox) before onboarding any account that isn't a controlled
+  // demo/test account.
+  const responsePayload: any = { message: "OTP sent to your email", email, devOtp: otp };
 
   res.json(responsePayload);
 });
@@ -687,18 +722,23 @@ app.post("/api/auth/verify-otp", (req, res) => {
     return res.status(400).json({ error: "Email and OTP are required" });
   }
 
-  const entry = otpStore.get((email || "").toLowerCase());
-  
-  // Accept 123456 as universal demo OTP or check store
-  const isValidOtp = otp === "123456" || (!!entry && entry.otp === otp && Date.now() <= entry.expiresAt);
+  const normalizedEmail = email.toLowerCase();
+  if (!checkRateLimit(verifyAttempts, normalizedEmail, MAX_VERIFY_ATTEMPTS)) {
+    return res.status(429).json({ error: "Too many attempts. Please request a new code and try again later." });
+  }
+
+  const entry = otpStore.get(normalizedEmail);
+
+  // The universal "123456" bypass has been removed. Every login now requires
+  // the actual code issued by /api/auth/login for that email.
+  const isValidOtp = !!entry && entry.otp === otp && Date.now() <= entry.expiresAt;
 
   if (!isValidOtp) {
     return res.status(401).json({ error: "Invalid or expired code" });
   }
 
-  if (entry) {
-    otpStore.delete(email.toLowerCase());
-  }
+  otpStore.delete(normalizedEmail);
+  verifyAttempts.delete(normalizedEmail);
 
   const db = loadDb();
   const user = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
