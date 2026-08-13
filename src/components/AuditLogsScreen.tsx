@@ -161,14 +161,14 @@ export default function AuditLogsScreen() {
       </div>
 
       {successMsg && (
-        <div className="bg-emerald-950/15 border border-emerald-800/85 border-l-4 border-l-emerald-500 p-3.5 rounded-lg text-xs text-emerald-200 flex items-start space-x-2 font-medium">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-lg bg-emerald-950/95 border border-emerald-800/85 border-l-4 border-l-emerald-500 p-3.5 rounded-lg text-xs text-emerald-200 flex items-start space-x-2 font-medium shadow-2xl backdrop-blur-sm">
           <CheckCircle className="w-4 h-4 mt-0.5 shrink-0 text-emerald-400" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="bg-rose-950/15 border border-rose-800/85 border-l-4 border-l-rose-500 p-3.5 rounded-lg text-xs text-rose-200 flex items-start space-x-2 font-medium">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-lg bg-rose-950/95 border border-rose-800/85 border-l-4 border-l-rose-500 p-3.5 rounded-lg text-xs text-rose-200 flex items-start space-x-2 font-medium shadow-2xl backdrop-blur-sm">
           <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-rose-400" />
           <span>{errorMsg}</span>
         </div>

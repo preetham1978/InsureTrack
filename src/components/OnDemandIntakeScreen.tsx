@@ -107,14 +107,14 @@ export default function OnDemandIntakeScreen({ user }: OnDemandIntakeScreenProps
       </div>
 
       {errorMsg && (
-        <div className="bg-red-500/10 border border-red-500/30 p-3 rounded-lg flex items-center space-x-3 text-red-400 text-sm">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-lg bg-red-950/95 border border-red-500/30 p-3 rounded-lg flex items-center space-x-3 text-red-400 text-sm shadow-2xl backdrop-blur-sm">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-lg flex items-center space-x-3 text-emerald-400 text-sm">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-lg bg-emerald-950/95 border border-emerald-500/30 p-3 rounded-lg flex items-center space-x-3 text-emerald-400 text-sm shadow-2xl backdrop-blur-sm">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
           <span>{successMsg}</span>
         </div>
