@@ -34,6 +34,10 @@ export default function QueueScreen({ user, onNavigateToWorkspace, clientIdFilte
   const [sortBy, setSortBy] = useState<"date" | "created">("date");
   const [selectedApts, setSelectedApts] = useState<string[]>([]);
 
+  // Pagination
+  const PAGE_SIZE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+
   const loadQueue = async () => {
     setLoading(true);
     try {
@@ -152,6 +156,15 @@ export default function QueueScreen({ user, onNavigateToWorkspace, clientIdFilte
     }
   });
 
+  // Reset to page 1 whenever the filters change.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedClientId, selectedCarrier, selectedStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const paginatedFiltered = filtered.slice((currentPageSafe - 1) * PAGE_SIZE, currentPageSafe * PAGE_SIZE);
+
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       setSelectedApts(filtered.map(a => a.id));
@@ -182,6 +195,7 @@ export default function QueueScreen({ user, onNavigateToWorkspace, clientIdFilte
             onClick={loadQueue}
             className="p-1.5 border border-slate-850 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white cursor-pointer transition-colors shrink-0"
             title="Refresh queue"
+            aria-label="Refresh intake queue"
           >
             <RefreshCw className="w-4.5 h-4.5" />
           </button>
@@ -329,6 +343,7 @@ export default function QueueScreen({ user, onNavigateToWorkspace, clientIdFilte
             <p className="text-xs text-slate-500">Adjust search query or switch status categories to explore more.</p>
           </div>
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -350,7 +365,7 @@ export default function QueueScreen({ user, onNavigateToWorkspace, clientIdFilte
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {filtered.map((apt) => {
+                {paginatedFiltered.map((apt) => {
                   const isSelected = selectedApts.includes(apt.id);
                   const isPending = apt.status === "pending_review";
                   
@@ -431,6 +446,31 @@ export default function QueueScreen({ user, onNavigateToWorkspace, clientIdFilte
               </tbody>
             </table>
           </div>
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800 text-xs text-slate-400">
+            <span>
+              Showing {(currentPageSafe - 1) * PAGE_SIZE + 1}–{Math.min(currentPageSafe * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </span>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPageSafe === 1}
+                aria-label="Previous page"
+                className="px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer font-semibold"
+              >
+                Prev
+              </button>
+              <span className="font-semibold text-slate-300">Page {currentPageSafe} of {totalPages}</span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPageSafe === totalPages}
+                aria-label="Next page"
+                className="px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer font-semibold"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+          </>
         )}
       </div>
     </div>

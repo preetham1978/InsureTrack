@@ -24,6 +24,10 @@ export default function AuditLogsScreen() {
   const [selectedAction, setSelectedAction] = useState<string>("all");
   const [selectedClientId, setSelectedClientId] = useState<string>("all");
 
+  // Pagination
+  const PAGE_SIZE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+
   const loadLogsAndClients = async () => {
     setLoading(true);
     try {
@@ -106,6 +110,16 @@ export default function AuditLogsScreen() {
     return matchesSearch && matchesAction && matchesClient;
   });
 
+  // Reset to page 1 whenever the filters change, so you can't get stuck on
+  // a page number that no longer has any results.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedAction, selectedClientId]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const paginatedLogs = filtered.slice((currentPageSafe - 1) * PAGE_SIZE, currentPageSafe * PAGE_SIZE);
+
   return (
     <div className="space-y-6 text-slate-100">
       {/* Header */}
@@ -122,6 +136,7 @@ export default function AuditLogsScreen() {
             onClick={loadLogsAndClients}
             className="p-1.5 border border-slate-800 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer shrink-0 transition-colors"
             title="Refresh logs"
+            aria-label="Refresh audit logs"
           >
             <RefreshCw className="w-4.5 h-4.5" />
           </button>
@@ -217,6 +232,7 @@ export default function AuditLogsScreen() {
             <p className="text-sm font-semibold text-slate-400">No audit logs matched filters.</p>
           </div>
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -230,7 +246,7 @@ export default function AuditLogsScreen() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-mono">
-                {filtered.map((log) => {
+                {paginatedLogs.map((log) => {
                   const clientObj = clients.find(c => c.id === log.client_id);
                   const isCritical = log.action === "DECRYPT_POLICY_NUMBER" || log.action === "AUDIT_LOG_CLEARED" || log.action === "ADMIN_DELETE_USER";
                   
@@ -265,6 +281,31 @@ export default function AuditLogsScreen() {
               </tbody>
             </table>
           </div>
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800 text-xs text-slate-400">
+            <span>
+              Showing {(currentPageSafe - 1) * PAGE_SIZE + 1}–{Math.min(currentPageSafe * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </span>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPageSafe === 1}
+                aria-label="Previous page"
+                className="px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer font-semibold"
+              >
+                Prev
+              </button>
+              <span className="font-semibold text-slate-300">Page {currentPageSafe} of {totalPages}</span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPageSafe === totalPages}
+                aria-label="Next page"
+                className="px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer font-semibold"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+          </>
         )}
       </div>
     </div>

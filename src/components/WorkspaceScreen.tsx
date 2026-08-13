@@ -211,6 +211,8 @@ export default function WorkspaceScreen({ user, appointmentId, onBack }: Workspa
           <button
             onClick={onBack}
             className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer transition-colors"
+            title="Back to queue"
+            aria-label="Back to queue"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>

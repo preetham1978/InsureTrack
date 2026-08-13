@@ -258,6 +258,7 @@ export default function UserManagementScreen({ currentUser }: UserManagementScre
                             onClick={() => handleOpenEditModal(u)}
                             className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer"
                             title="Edit User Role"
+                            aria-label={`Edit ${u.name}`}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -267,6 +268,7 @@ export default function UserManagementScreen({ currentUser }: UserManagementScre
                               onClick={() => handleDeleteUser(u.id, u.email)}
                               className="p-1.5 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 rounded-lg cursor-pointer"
                               title="Revoke Access"
+                              aria-label={`Delete ${u.name}`}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -298,6 +300,8 @@ export default function UserManagementScreen({ currentUser }: UserManagementScre
               <button
                 onClick={() => setModalOpen(false)}
                 className="text-slate-400 hover:text-white hover:bg-slate-800 p-1 rounded-lg cursor-pointer transition-colors"
+                title="Close dialog"
+                aria-label="Close dialog"
               >
                 <X className="w-4.5 h-4.5" />
               </button>

@@ -168,6 +168,7 @@ export default function App() {
               <button
                 onClick={handleLogout}
                 title="Log out session"
+                aria-label="Log out"
                 className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-950/20 rounded-full transition-colors cursor-pointer border border-transparent hover:border-slate-800"
               >
                 <LogOut className="w-4.5 h-4.5" />

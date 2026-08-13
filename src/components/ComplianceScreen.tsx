@@ -23,7 +23,7 @@ export default function ComplianceScreen() {
   const [reviewStatusChoice, setReviewStatusChoice] = useState("Reviewed - no issue");
 
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchClients = async (attempt = 1) => {
       try {
         const clientList = await api.getClients();
         setClients(clientList);
@@ -32,6 +32,10 @@ export default function ComplianceScreen() {
         }
       } catch (err) {
         console.error("Failed to fetch clients in ComplianceScreen", err);
+        // Retry once after a short delay in case of a transient network/server blip.
+        if (attempt < 2) {
+          setTimeout(() => fetchClients(attempt + 1), 1500);
+        }
       }
     };
     if (isOpsOrSuper) {
@@ -134,6 +138,9 @@ export default function ComplianceScreen() {
                     <div>
                       <h3 className="font-bold text-white text-sm">Billing Anomalies & Claims Review</h3>
                       <p className="text-xs text-slate-400">Review statistical outliers, duplicate patterns, and elevated denial clusters. Flagged for human review — not fraud accusations.</p>
+                      <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-950/40 text-blue-300 border border-blue-800/50">
+                        Reviewing: {anomaliesData?.clientName || clients.find((c: any) => c.id === selectedClientId)?.name || "..."}
+                      </span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className="text-xs text-slate-400 font-medium">Select Tenant:</span>
@@ -142,6 +149,11 @@ export default function ComplianceScreen() {
                         onChange={(e) => setSelectedClientId(e.target.value)}
                         className="bg-slate-950 border border-slate-700 text-white text-xs rounded px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
                       >
+                        {clients.length === 0 && (
+                          <option value={selectedClientId}>
+                            {anomaliesData?.clientName || "Loading tenants..."}
+                          </option>
+                        )}
                         {clients.map((c: any) => (
                           <option key={c.id} value={c.id}>
                             {c.name}
@@ -152,6 +164,7 @@ export default function ComplianceScreen() {
                         onClick={() => loadAnomalies(selectedClientId)}
                         className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 transition-colors cursor-pointer"
                         title="Refresh Anomalies"
+                        aria-label="Refresh billing anomalies"
                       >
                         <RefreshCw className={`w-4 h-4 ${loadingAnomalies ? "animate-spin" : ""}`} />
                       </button>

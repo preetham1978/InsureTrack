@@ -138,6 +138,7 @@ export default function DashboardScreen({ user, onNavigateToQueue, onNavigateToW
           <button
             onClick={loadData}
             title="Refresh statistics"
+            aria-label="Refresh dashboard statistics"
             className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg cursor-pointer shrink-0 transition-colors border border-transparent hover:border-slate-700"
           >
             <RefreshCw className="w-4 h-4" />
