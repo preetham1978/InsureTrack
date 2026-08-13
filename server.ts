@@ -38,6 +38,58 @@ const DB_FILE = path.join(process.cwd(), "database.json");
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+// ---------------------------------------------------------------------------
+// PHI redaction helpers — used before sending any free-text or sample data to
+// the Gemini API. These reduce the amount of identifiable patient information
+// that leaves the application boundary.
+// ---------------------------------------------------------------------------
+
+// Redacts common direct identifiers from free-text notes.
+function redactPhiText(input: string | null | undefined): string {
+  if (!input) return "";
+  let out = String(input);
+
+  // Email addresses
+  out = out.replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "[redacted-email]");
+  // Phone numbers (10+ digits, allowing separators)
+  out = out.replace(/\b(?:\+?\d{1,2}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g, "[redacted-phone]");
+  // SSN
+  out = out.replace(/\b\d{3}-\d{2}-\d{4}\b/g, "[redacted-ssn]");
+  // Dates: YYYY-MM-DD, MM/DD/YYYY, MM-DD-YY, etc.
+  out = out.replace(/\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/g, "[redacted-date]");
+  out = out.replace(/\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g, "[redacted-date]");
+  // Member / policy / MRN style identifiers: 6+ chars mixing letters and digits
+  out = out.replace(/\b(?=[A-Za-z0-9-]{6,})(?=[A-Za-z0-9-]*\d)[A-Za-z0-9-]+\b/g, "[redacted-id]");
+  // Long bare digit runs (6+) not already caught
+  out = out.replace(/\b\d{6,}\b/g, "[redacted-id]");
+  // Capitalized word pairs, which are usually person names
+  out = out.replace(/\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g, "[redacted-name]");
+  // Remaining standalone capitalized words (conservative catch-all)
+  out = out.replace(/\b[A-Z][a-z]{2,}\b/g, "[redacted]");
+
+  return out;
+}
+
+// Converts a raw CSV cell into a non-identifying shape descriptor, so the AI
+// column-mapper can reason about data format without seeing real patient data.
+function describeCellShape(value: any): string {
+  const v = value === null || value === undefined ? "" : String(value).trim();
+  if (v === "") return "<empty>";
+  if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(v) || /^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(v)) return "<date>";
+  if (/^(m|f|male|female|other|unknown)$/i.test(v)) return "<gender-like>";
+  if (/^\d+$/.test(v)) return `<digits:${v.length}>`;
+  if (/^[A-Za-z]+$/.test(v)) return `<word:${v.length}>`;
+  if (/^[A-Za-z][A-Za-z\s.'-]*$/.test(v)) return `<words:${v.split(/\s+/).length}>`;
+  if (/\d/.test(v) && /[A-Za-z]/.test(v)) return `<alphanumeric:${v.length}>`;
+  return `<text:${v.length}>`;
+}
+
+// Maps a 2D array of sample CSV rows to shape descriptors only.
+function describeSampleRows(rows: any[][]): string[][] {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((row) => (Array.isArray(row) ? row.map(describeCellShape) : []));
+}
+
 // Simple Reversible Encryption for Policy Numbers
 const ENCRYPTION_KEY_RAW = process.env.ENCRYPTION_KEY;
 if (!ENCRYPTION_KEY_RAW) {
@@ -979,12 +1031,18 @@ app.post("/api/import-batches/analyze-mapping", async (req, res) => {
 
   // 2. No past mapping, call AI
   try {
+    // Never send raw patient data to the AI. Only column headers (which are
+    // schema metadata, not PHI) and non-identifying shape descriptors are sent.
+    const redactedSampleRows = describeSampleRows(sampleRows);
+
     const prompt = `You are a data mapping assistant. I have a CSV file with the following columns:
     
     ${JSON.stringify(headers)}
 
-    Here are some sample rows:
-    ${JSON.stringify(sampleRows)}
+    The actual cell values are withheld for privacy. Instead, here are shape descriptors
+    for some sample rows, in the same column order as the headers above. Use them only to
+    infer data format (for example <date> suggests a date field, <digits:N> a numeric id):
+    ${JSON.stringify(redactedSampleRows)}
 
     Please map each column to one of these exact target fields:
     first_name, last_name, dob, gender, appointment_date, provider_name, carrier_name, policy_number, group_number, subscriber_name, subscriber_dob, relationship.
@@ -1631,9 +1689,9 @@ app.get("/api/appointments/:id/denial-risk", async (req, res) => {
     } else if (c.call_outcome === "not_approved") {
       notApprovedCount++;
       if (c.notes) {
-        // Strip anything resembling proper names (simple heuristic capitalizing words)
-        const sanitized = c.notes.replace(/\b([A-Z][a-z]+)\b/g, "[redacted]");
-        denialNotes.push(sanitized);
+        // Strip direct identifiers (names, dates, phone/email, member and policy
+        // ids) before any note text is sent to the AI.
+        denialNotes.push(redactPhiText(c.notes));
       }
     } else {
       otherCount++;
