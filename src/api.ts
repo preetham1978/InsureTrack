@@ -1,15 +1,10 @@
 const API_BASE = "";
 
-// Helper to get auth header
+// The session token now lives in an httpOnly cookie, which the browser
+// attaches automatically to same-origin requests. There is deliberately no
+// token handling here: script running on this page cannot read the session.
 function getHeaders(): Record<string, string> {
-  const token = localStorage.getItem("insuretrack_token");
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
+  return { "Content-Type": "application/json" };
 }
 
 export const api = {
@@ -38,14 +33,30 @@ export const api = {
       throw new Error(err.error || "Verification failed");
     }
     const data = await res.json();
-    localStorage.setItem("insuretrack_token", data.token);
+    // Only the user profile is cached, for interface rendering. It is not a
+    // credential; the session itself is held in an httpOnly cookie.
     localStorage.setItem("insuretrack_user", JSON.stringify(data.user));
     return data;
   },
 
-  logout() {
-    localStorage.removeItem("insuretrack_token");
+  async getAuthConfig() {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/config`);
+      if (!res.ok) return { demoMode: false };
+      return res.json();
+    } catch {
+      return { demoMode: false };
+    }
+  },
+
+  async logout() {
     localStorage.removeItem("insuretrack_user");
+    localStorage.removeItem("insuretrack_token"); // clear any legacy value
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, { method: "POST" });
+    } catch {
+      // Clearing the local profile is enough for the interface to sign out.
+    }
   },
 
   getCurrentUser() {

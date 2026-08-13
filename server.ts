@@ -36,6 +36,20 @@ app.use((req, res, next) => {
 });
 const DB_FILE = path.join(process.cwd(), "database.json");
 
+// Demo mode. OFF unless explicitly switched on. When enabled, the login
+// endpoint returns the one-time code in its response and the sign-in screen
+// offers quick test accounts, so client demonstrations can run without an
+// email or SMS provider configured. This must never be enabled for an
+// environment reachable by real users or holding real patient data.
+const DEMO_MODE = process.env.DEMO_MODE === "true";
+if (DEMO_MODE) {
+  console.warn(
+    "[SECURITY] DEMO_MODE is enabled. One-time codes are returned in API responses " +
+    "and test accounts are exposed on the sign-in screen. Do not use this configuration " +
+    "with real users or real patient data."
+  );
+}
+
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // ---------------------------------------------------------------------------
@@ -548,7 +562,7 @@ async function initializeAndSyncDb() {
       
       if (clientsSnap.empty) {
         console.log("[FIREBASE] Cloud database is empty. Performing automatic database.json to Firestore migration...");
-        const collections = ["clients", "users", "import_batches", "patients", "appointments", "insurance_details", "verification_calls", "audit_log", "migrations"];
+        const collections = ["clients", "users", "import_batches", "patients", "appointments", "insurance_details", "verification_calls", "audit_log"];
         
         for (const colName of collections) {
           const items = localDb[colName] || [];
@@ -650,7 +664,7 @@ function saveDb(db: any) {
   // Asynchronously propagate all local mutations to Cloud Firestore
   if (useFirestore && firestoreDb) {
     setTimeout(() => {
-      const collections = ["clients", "users", "import_batches", "patients", "appointments", "insurance_details", "verification_calls", "audit_log", "migrations"];
+      const collections = ["clients", "users", "import_batches", "patients", "appointments", "insurance_details", "verification_calls", "audit_log"];
       for (const colName of collections) {
         const items = db[colName] || [];
         for (const item of items) {
@@ -697,14 +711,33 @@ function writeAuditLog(userId: string, email: string, clientId: string | null, a
 // JSON body parser
 app.use(express.json({ limit: '10mb' }));
 
-// Middleware to mock authentication via headers
-app.use((req, res, next) => {
+// Reads the session token from the httpOnly cookie. A Bearer header is still
+// accepted so that scripted and programmatic callers keep working; browsers
+// no longer use it, and nothing stores the token where scripts can reach it.
+function readSessionToken(req: any): string | null {
+  const rawCookies = req.headers.cookie;
+  if (rawCookies) {
+    for (const part of rawCookies.split(";")) {
+      const idx = part.indexOf("=");
+      if (idx === -1) continue;
+      if (part.slice(0, idx).trim() === "insuretrack_session") {
+        return decodeURIComponent(part.slice(idx + 1).trim());
+      }
+    }
+  }
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.substring(7);
+  }
+  return null;
+}
+
+app.use((req, res, next) => {
+  const token = readSessionToken(req);
+  if (!token) {
     return next(); // let per-route guards decide if auth is required
   }
 
-  const token = authHeader.substring(7);
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
       sub: string; email: string; role: string; client_id: string | null;
@@ -775,11 +808,14 @@ app.post("/api/auth/login", (req, res) => {
 
   console.log(`[AUTH] OTP generated for ${email} (OTP: ${otp})`);
 
-  // DEMO MODE: the real OTP is returned in the response so client demos can
-  // proceed without a wired-up email provider. Remove this line (and require
-  // the real inbox) before onboarding any account that isn't a controlled
-  // demo/test account.
-  const responsePayload: any = { message: "OTP sent to your email", email, devOtp: otp };
+  // The one-time code is returned only when DEMO_MODE is explicitly enabled.
+  // In every other configuration it exists solely in the server log and, once
+  // a delivery channel is wired up, in the user's inbox.
+  const responsePayload: any = { message: "OTP sent to your email", email };
+  if (DEMO_MODE) {
+    responsePayload.devOtp = otp;
+    responsePayload.demoMode = true;
+  }
 
   res.json(responsePayload);
 });
@@ -823,10 +859,38 @@ app.post("/api/auth/verify-otp", (req, res) => {
     { expiresIn: "12h" }
   );
 
-  res.json({
-    user,
-    token
+  // The token is delivered as an httpOnly cookie so that page scripts cannot
+  // read it. This is the mitigation for audit finding 5.6: a cross-site
+  // scripting flaw can no longer simply lift the session out of local storage.
+  const isHttps = (req as any).secure || req.headers["x-forwarded-proto"] === "https";
+  res.cookie("insuretrack_session", token, {
+    httpOnly: true,
+    secure: isHttps,
+    sameSite: "strict",
+    maxAge: 12 * 60 * 60 * 1000,
+    path: "/",
   });
+
+  // The token is intentionally NOT included in the response body.
+  res.json({ user });
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  const isHttps = (req as any).secure || req.headers["x-forwarded-proto"] === "https";
+  res.clearCookie("insuretrack_session", {
+    httpOnly: true,
+    secure: isHttps,
+    sameSite: "strict",
+    path: "/",
+  });
+  res.json({ success: true });
+});
+
+// Lets the sign-in screen know whether to show demonstration affordances.
+// Deliberately unauthenticated: it reveals only whether demo mode is on,
+// which is already obvious from the sign-in screen itself.
+app.get("/api/auth/config", (_req, res) => {
+  res.json({ demoMode: DEMO_MODE });
 });
 
 app.get("/api/auth/me", (req, res) => {

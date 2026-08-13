@@ -16,6 +16,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [message, setMessage] = useState<string | null>(null);
 
   const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
+
+  React.useEffect(() => {
+    api.getAuthConfig()
+      .then((cfg: any) => setDemoMode(!!cfg.demoMode))
+      .catch(() => setDemoMode(false));
+  }, []);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,8 +131,9 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 </button>
               </div>
 
+              {demoMode && (
               <div className="mt-6 pt-6 border-t border-slate-800">
-                <p className="text-xs font-medium text-slate-400 mb-2">Quick Test Accounts:</p>
+                <p className="text-xs font-medium text-slate-400 mb-2">Quick Test Accounts (demo mode):</p>
                 <div className="flex flex-wrap gap-1.5">
                   {[
                     { label: "Super Admin", email: "super_admin@veloai.com" },
@@ -145,6 +153,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                   ))}
                 </div>
               </div>
+              )}
             </form>
           )}
 
@@ -152,9 +161,11 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             <form className="space-y-4" onSubmit={handleVerifyOtp}>
               <div className="text-sm text-slate-300 mb-2">
                 We sent a temporary sign-in code to <strong className="text-white">{email}</strong>.
-                <div className="mt-1 text-xs text-blue-400 bg-blue-950/30 p-2 rounded border border-blue-900/50">
-                  Demo Note: Use verification code <strong className="text-white font-mono">123456</strong> to sign in.
-                </div>
+                {demoMode && devOtp && (
+                  <div className="mt-1 text-xs text-blue-400 bg-blue-950/30 p-2 rounded border border-blue-900/50">
+                    Demo mode: your verification code is <strong className="text-white font-mono">{devOtp}</strong>.
+                  </div>
+                )}
               </div>
               <div>
                 <label htmlFor="otp" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">

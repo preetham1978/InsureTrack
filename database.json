@@ -1,0 +1,1987 @@
+{
+  "clients": [
+    {
+      "id": "client_apc",
+      "name": "Apex Primary Care",
+      "code": "APC",
+      "created_at": "2026-07-05T11:51:17.447Z"
+    },
+    {
+      "id": "client_mhg",
+      "name": "Metropolitan Health Group",
+      "created_at": "2026-07-05T11:51:17.447Z",
+      "code": "MHG"
+    },
+    {
+      "id": "client_vap",
+      "created_at": "2026-07-05T11:51:17.447Z",
+      "code": "VAP",
+      "name": "Valley Pediatrics"
+    }
+  ],
+  "users": [
+    {
+      "id": "user_client_apc",
+      "assigned_client_ids": [],
+      "client_id": "client_apc",
+      "email": "apc_viewer@veloai.com",
+      "role": "client_viewer",
+      "created_at": "2026-08-04T11:51:17.447Z",
+      "name": "Dr. James Carter (APC)",
+      "is_global": false
+    },
+    {
+      "id": "user_client_mhg",
+      "client_id": "client_mhg",
+      "email": "mhg_viewer@veloai.com",
+      "assigned_client_ids": [],
+      "role": "client_viewer",
+      "name": "Jane Smith (MHG)",
+      "created_at": "2026-08-04T11:51:17.447Z",
+      "is_global": false
+    },
+    {
+      "id": "user_ops",
+      "name": "John Doe (Ops Admin)",
+      "client_id": null,
+      "is_global": false,
+      "assigned_client_ids": [],
+      "created_at": "2026-08-04T11:51:17.447Z",
+      "email": "ops_admin@veloai.com",
+      "role": "ops_admin"
+    },
+    {
+      "id": "user_rev",
+      "client_id": null,
+      "created_at": "2026-08-04T11:51:17.447Z",
+      "role": "team1_reviewer",
+      "email": "reviewer@veloai.com",
+      "name": "Prasad Preetham (Reviewer)",
+      "is_global": true,
+      "assigned_client_ids": []
+    },
+    {
+      "id": "user_super",
+      "client_id": null,
+      "created_at": "2026-08-04T11:51:17.447Z",
+      "name": "Admin (Super)",
+      "role": "super_admin",
+      "email": "super_admin@veloai.com",
+      "assigned_client_ids": [],
+      "is_global": false
+    },
+    {
+      "id": "user_ver",
+      "created_at": "2026-08-04T11:51:17.447Z",
+      "is_global": true,
+      "email": "verifier@veloai.com",
+      "name": "Sarah Connor (Verifier)",
+      "role": "team2_verifier",
+      "client_id": null,
+      "assigned_client_ids": []
+    }
+  ],
+  "import_batches": [
+    {
+      "id": "batch_1",
+      "client_id": "client_apc",
+      "filename": "appointments_apc_july.xlsx",
+      "created_at": "2026-07-31T11:51:17.447Z",
+      "record_count": 5,
+      "status": "completed",
+      "uploaded_by": "user_rev"
+    },
+    {
+      "id": "batch_2",
+      "client_id": "client_mhg",
+      "created_at": "2026-08-02T11:51:17.447Z",
+      "filename": "appointments_mhg_aug.csv",
+      "record_count": 4,
+      "status": "completed",
+      "uploaded_by": "user_rev"
+    }
+  ],
+  "patients": [
+    {
+      "id": "pat_apc_1",
+      "created_at": "2026-07-31T11:51:17.447Z",
+      "gender": "Male",
+      "first_name": "John",
+      "client_id": "client_apc",
+      "dob": "1985-05-12",
+      "last_name": "Doe"
+    },
+    {
+      "id": "pat_apc_2",
+      "gender": "Female",
+      "created_at": "2026-07-31T11:51:17.447Z",
+      "first_name": "Alice",
+      "last_name": "Johnson",
+      "dob": "1990-11-23",
+      "client_id": "client_apc"
+    },
+    {
+      "id": "pat_apc_3",
+      "dob": "1962-07-04",
+      "gender": "Male",
+      "client_id": "client_apc",
+      "created_at": "2026-07-31T11:51:17.447Z",
+      "last_name": "Miller",
+      "first_name": "Robert"
+    },
+    {
+      "id": "pat_apc_4",
+      "gender": "Female",
+      "created_at": "2026-07-31T11:51:17.447Z",
+      "first_name": "Emily",
+      "last_name": "Davis",
+      "dob": "1995-02-18",
+      "client_id": "client_apc"
+    },
+    {
+      "id": "pat_apc_5",
+      "gender": "Male",
+      "created_at": "2026-07-31T11:51:17.447Z",
+      "first_name": "David",
+      "last_name": "Wilson",
+      "dob": "1978-09-30",
+      "client_id": "client_apc"
+    },
+    {
+      "id": "pat_mhg_1",
+      "gender": "Male",
+      "client_id": "client_mhg",
+      "dob": "1970-03-15",
+      "last_name": "Brown",
+      "first_name": "Michael",
+      "created_at": "2026-08-02T11:51:17.447Z"
+    },
+    {
+      "id": "pat_mhg_2",
+      "client_id": "client_mhg",
+      "dob": "1988-12-05",
+      "last_name": "Martinez",
+      "first_name": "Sophia",
+      "created_at": "2026-08-02T11:51:17.447Z",
+      "gender": "Female"
+    },
+    {
+      "id": "pat_mhg_3",
+      "first_name": "William",
+      "gender": "Male",
+      "last_name": "Anderson",
+      "dob": "1955-06-25",
+      "created_at": "2026-08-02T11:51:17.447Z",
+      "client_id": "client_mhg"
+    },
+    {
+      "id": "pat_mhg_4",
+      "created_at": "2026-08-02T11:51:17.447Z",
+      "first_name": "Emma",
+      "last_name": "Taylor",
+      "gender": "Female",
+      "dob": "2001-10-10",
+      "client_id": "client_mhg"
+    }
+  ],
+  "appointments": [
+    {
+      "id": "apt_apc_1",
+      "provider_name": "Dr. Gregory House",
+      "patient_id": "pat_apc_1",
+      "appointment_date": "2026-08-05",
+      "status": "in_verification",
+      "client_id": "client_apc",
+      "updated_at": "2026-08-05T11:58:24.789Z",
+      "created_at": "2026-08-02T23:51:17.447Z"
+    },
+    {
+      "id": "apt_apc_2",
+      "created_at": "2026-07-31T11:51:17.447Z",
+      "updated_at": "2026-07-31T11:51:17.447Z",
+      "provider_name": "Dr. Lisa Cuddy",
+      "client_id": "client_apc",
+      "appointment_date": "2026-08-06",
+      "patient_id": "pat_apc_2",
+      "status": "in_verification"
+    },
+    {
+      "id": "apt_apc_3",
+      "status": "approved",
+      "client_id": "client_apc",
+      "appointment_date": "2026-08-03",
+      "patient_id": "pat_apc_3",
+      "provider_name": "Dr. James Wilson",
+      "updated_at": "2026-08-03T11:51:17.447Z",
+      "created_at": "2026-07-31T11:51:17.447Z"
+    },
+    {
+      "id": "apt_apc_4",
+      "updated_at": "2026-08-04T07:51:17.447Z",
+      "status": "pending_review",
+      "provider_name": "Dr. Allison Cameron",
+      "appointment_date": "2026-08-07",
+      "client_id": "client_apc",
+      "created_at": "2026-08-04T07:51:17.447Z",
+      "patient_id": "pat_apc_4"
+    },
+    {
+      "id": "apt_apc_5",
+      "updated_at": "2026-08-02T11:51:17.447Z",
+      "client_id": "client_apc",
+      "appointment_date": "2026-08-02",
+      "status": "not_approved",
+      "created_at": "2026-07-31T11:51:17.447Z",
+      "provider_name": "Dr. Eric Foreman",
+      "patient_id": "pat_apc_5"
+    },
+    {
+      "id": "apt_mhg_1",
+      "created_at": "2026-08-03T11:51:17.447Z",
+      "updated_at": "2026-08-03T11:51:17.447Z",
+      "status": "in_verification",
+      "appointment_date": "2026-08-05",
+      "client_id": "client_mhg",
+      "patient_id": "pat_mhg_1",
+      "provider_name": "Dr. Meredith Grey"
+    },
+    {
+      "id": "apt_mhg_2",
+      "created_at": "2026-07-30T11:51:17.447Z",
+      "updated_at": "2026-07-30T11:51:17.447Z",
+      "status": "in_verification",
+      "provider_name": "Dr. Derek Shepherd",
+      "client_id": "client_mhg",
+      "patient_id": "pat_mhg_2",
+      "appointment_date": "2026-08-08"
+    },
+    {
+      "id": "apt_mhg_3",
+      "appointment_date": "2026-08-06",
+      "patient_id": "pat_mhg_3",
+      "provider_name": "Dr. Cristina Yang",
+      "client_id": "client_mhg",
+      "updated_at": "2026-08-03T23:51:17.447Z",
+      "status": "pending_review",
+      "created_at": "2026-08-03T23:51:17.447Z"
+    },
+    {
+      "id": "apt_mhg_4",
+      "status": "approved",
+      "created_at": "2026-07-30T11:51:17.447Z",
+      "client_id": "client_mhg",
+      "appointment_date": "2026-08-01",
+      "updated_at": "2026-08-01T11:51:17.447Z",
+      "patient_id": "pat_mhg_4",
+      "provider_name": "Dr. Alex Karev"
+    }
+  ],
+  "insurance_details": [
+    {
+      "id": "ins_apc_1",
+      "group_number": "TX-40291",
+      "relationship": "Self",
+      "appointment_id": "apt_apc_1",
+      "client_id": "client_apc",
+      "patient_id": "pat_apc_1",
+      "carrier_name": "Blue Cross Blue Shield",
+      "created_at": "2026-07-31T11:51:17.448Z",
+      "subscriber_dob": "1985-05-12",
+      "subscriber_name": "John Doe",
+      "policy_number": "enc:2d94a6991dccb83fc67bbc4217cab0e4"
+    },
+    {
+      "id": "ins_apc_2",
+      "created_at": "2026-07-31T11:51:17.448Z",
+      "group_number": "AE-GRP-90",
+      "relationship": "Self",
+      "appointment_id": "apt_apc_2",
+      "carrier_name": "Aetna",
+      "subscriber_dob": "1990-11-23",
+      "policy_number": "enc:95f5cad1f916494bfbfd4cee51c530d6",
+      "patient_id": "pat_apc_2",
+      "client_id": "client_apc",
+      "subscriber_name": "Alice Johnson"
+    },
+    {
+      "id": "ins_apc_3",
+      "patient_id": "pat_apc_3",
+      "subscriber_name": "Robert Miller",
+      "group_number": "UH-90412",
+      "client_id": "client_apc",
+      "relationship": "Self",
+      "subscriber_dob": "1962-07-04",
+      "carrier_name": "UnitedHealthcare",
+      "policy_number": "enc:af99a865fe1d74e90e7ba8765475981d",
+      "created_at": "2026-07-31T11:51:17.448Z",
+      "appointment_id": "apt_apc_3"
+    },
+    {
+      "id": "ins_apc_4",
+      "relationship": "Self",
+      "appointment_id": "apt_apc_4",
+      "group_number": "CI-GRP-11",
+      "client_id": "client_apc",
+      "created_at": "2026-07-31T11:51:17.448Z",
+      "subscriber_name": "Emily Davis",
+      "policy_number": "enc:ce9a3df719654c79554dffc5a0e6de5f",
+      "carrier_name": "Cigna",
+      "patient_id": "pat_apc_4",
+      "subscriber_dob": "1995-02-18"
+    },
+    {
+      "id": "ins_apc_5",
+      "client_id": "client_apc",
+      "subscriber_dob": "1978-09-30",
+      "subscriber_name": "David Wilson",
+      "patient_id": "pat_apc_5",
+      "group_number": "TX-40291",
+      "relationship": "Self",
+      "policy_number": "enc:889208649e26fc441a1352e45428fd0c",
+      "appointment_id": "apt_apc_5",
+      "created_at": "2026-07-31T11:51:17.448Z",
+      "carrier_name": "Blue Cross Blue Shield"
+    },
+    {
+      "id": "ins_mhg_1",
+      "client_id": "client_mhg",
+      "relationship": "Self",
+      "subscriber_name": "Michael Brown",
+      "group_number": "CI-GRP-22",
+      "policy_number": "enc:b20820c15a5352c5c4414c33a4e06431",
+      "subscriber_dob": "1970-03-15",
+      "patient_id": "pat_mhg_1",
+      "carrier_name": "Cigna",
+      "appointment_id": "apt_mhg_1",
+      "created_at": "2026-08-02T11:51:17.448Z"
+    },
+    {
+      "id": "ins_mhg_2",
+      "carrier_name": "Aetna",
+      "patient_id": "pat_mhg_2",
+      "subscriber_dob": "1988-12-05",
+      "group_number": "AE-GRP-90",
+      "relationship": "Self",
+      "created_at": "2026-08-02T11:51:17.448Z",
+      "appointment_id": "apt_mhg_2",
+      "client_id": "client_mhg",
+      "subscriber_name": "Sophia Martinez",
+      "policy_number": "enc:c4262856b4d1c8df0cef3d982caceb46"
+    },
+    {
+      "id": "ins_mhg_3",
+      "created_at": "2026-08-02T11:51:17.448Z",
+      "policy_number": "enc:cb457b0f28569ce9258ff8241f981856",
+      "subscriber_name": "William Anderson",
+      "client_id": "client_mhg",
+      "subscriber_dob": "1955-06-25",
+      "carrier_name": "UnitedHealthcare",
+      "appointment_id": "apt_mhg_3",
+      "patient_id": "pat_mhg_3",
+      "relationship": "Self",
+      "group_number": "UH-90412"
+    },
+    {
+      "id": "ins_mhg_4",
+      "subscriber_name": "Mark Taylor",
+      "relationship": "Father",
+      "created_at": "2026-08-02T11:51:17.448Z",
+      "group_number": "TX-10023",
+      "subscriber_dob": "1972-04-14",
+      "carrier_name": "Blue Cross Blue Shield",
+      "policy_number": "enc:ddbf8fd6e0aa078ff440a02e42c82fc4",
+      "appointment_id": "apt_mhg_4",
+      "patient_id": "pat_mhg_4",
+      "client_id": "client_mhg"
+    }
+  ],
+  "verification_calls": [
+    {
+      "id": "call_1",
+      "call_outcome": "approved",
+      "created_at": "2026-08-03T11:51:17.448Z",
+      "notes": "Called BCBS representative. Benefits verified. Policy is active and covers primary care visit with $20 copay.",
+      "appointment_id": "apt_apc_3",
+      "verified_by": "user_ver",
+      "checklist": {
+        "coPayInfo": true,
+        "activeStatus": true,
+        "priorAuthRequired": false,
+        "deductibleMet": true
+      }
+    },
+    {
+      "id": "call_2",
+      "created_at": "2026-08-02T11:51:17.448Z",
+      "appointment_id": "apt_apc_5",
+      "verified_by": "user_ver",
+      "notes": "Spoke to Aetna. Policy terminated effective 2026-06-30 due to non-payment.",
+      "checklist": {
+        "coPayInfo": false,
+        "deductibleMet": false,
+        "priorAuthRequired": false,
+        "activeStatus": false
+      },
+      "call_outcome": "not_approved"
+    },
+    {
+      "id": "call_3",
+      "call_outcome": "approved",
+      "notes": "Verified coverage with UHC. Prior authorization is required for specialized scan, but primary consultation is approved with $30 copay.",
+      "created_at": "2026-08-01T11:51:17.448Z",
+      "appointment_id": "apt_mhg_4",
+      "checklist": {
+        "priorAuthRequired": true,
+        "coPayInfo": true,
+        "activeStatus": true,
+        "deductibleMet": true
+      },
+      "verified_by": "user_ver"
+    }
+  ],
+  "audit_log": [
+    {
+      "id": "audit_auy6rdc5j",
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-13T06:13:56.060Z"
+    },
+    {
+      "id": "audit_x2rdnho4d",
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_rev",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-13T06:13:56.059Z"
+    },
+    {
+      "id": "audit_0xecp5znv",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-05T16:54:28.919Z",
+      "user_id": "system",
+      "record_id": "user_ver"
+    },
+    {
+      "id": "audit_1b0p2awz5",
+      "client_id": "client_apc",
+      "user_email": "apc_viewer@veloai.com",
+      "record_id": "user_client_apc",
+      "user_id": "user_client_apc",
+      "details": "User signed in using email/OTP.",
+      "created_at": "2026-08-05T06:17:23.866Z",
+      "action": "USER_LOGIN_SUCCESS"
+    },
+    {
+      "id": "audit_1hz3ikk2d",
+      "record_id": "user_super",
+      "user_email": "super_admin@veloai.com",
+      "user_id": "user_super",
+      "action": "USER_LOGIN_SUCCESS",
+      "client_id": null,
+      "details": "User signed in using email/OTP.",
+      "created_at": "2026-08-05T04:50:35.597Z"
+    },
+    {
+      "id": "audit_1imfo18bq",
+      "user_email": "system@veloai.com",
+      "user_id": "system",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "record_id": "user_ver",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-06T02:54:49.607Z"
+    },
+    {
+      "id": "audit_1ttn2fjcz",
+      "created_at": "2026-08-05T07:52:37.628Z",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_rev",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "client_id": null
+    },
+    {
+      "id": "audit_250qpyukw",
+      "created_at": "2026-08-05T11:14:09.445Z",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_ver",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_28qrzd1tr",
+      "user_id": "system",
+      "created_at": "2026-08-06T07:23:00.195Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "record_id": "user_ver",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_2e1il2d0f",
+      "client_id": null,
+      "created_at": "2026-08-05T06:16:13.137Z",
+      "user_id": "user_super",
+      "record_id": "user_super",
+      "action": "USER_LOGIN_SUCCESS",
+      "details": "User signed in using email/OTP.",
+      "user_email": "super_admin@veloai.com"
+    },
+    {
+      "id": "audit_2ttbrmh0n",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "record_id": "user_rev",
+      "created_at": "2026-08-05T16:46:25.095Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_2z1og7845",
+      "record_id": "user_rev",
+      "created_at": "2026-08-05T16:54:28.919Z",
+      "client_id": null,
+      "user_id": "system",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_329hc6ad5",
+      "user_id": "user_client_apc",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_email": "apc_viewer@veloai.com",
+      "created_at": "2026-08-05T06:15:54.227Z",
+      "record_id": "user_client_apc",
+      "details": "User signed in using email/OTP.",
+      "client_id": "client_apc"
+    },
+    {
+      "id": "audit_33wqa61j9",
+      "action": "USER_LOGIN_SUCCESS",
+      "details": "User signed in using email/OTP.",
+      "user_email": "ops_admin@veloai.com",
+      "client_id": null,
+      "created_at": "2026-08-05T06:14:10.827Z",
+      "user_id": "user_ops",
+      "record_id": "user_ops"
+    },
+    {
+      "id": "audit_3bjo09ibr",
+      "user_id": "system",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_rev",
+      "created_at": "2026-08-05T13:03:04.435Z",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_3hwpgwvcb",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "user_id": "system",
+      "record_id": "user_rev",
+      "user_email": "system@veloai.com",
+      "created_at": "2026-08-05T17:09:52.575Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_3lra5in06",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "record_id": "user_rev",
+      "created_at": "2026-08-05T11:14:09.445Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_42bkebete",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-05T08:10:36.142Z",
+      "record_id": "user_ver",
+      "user_email": "system@veloai.com",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_43b7i1stz",
+      "details": "User signed in using email/OTP.",
+      "client_id": "client_apc",
+      "user_email": "apc_viewer@veloai.com",
+      "record_id": "user_client_apc",
+      "action": "USER_LOGIN_SUCCESS",
+      "created_at": "2026-08-04T12:09:55.830Z",
+      "user_id": "user_client_apc"
+    },
+    {
+      "id": "audit_44ewv4hct",
+      "user_id": "user_client_apc",
+      "user_email": "apc_viewer@veloai.com",
+      "action": "USER_LOGIN_SUCCESS",
+      "record_id": "user_client_apc",
+      "created_at": "2026-08-04T14:49:23.403Z",
+      "details": "User signed in using email/OTP.",
+      "client_id": "client_apc"
+    },
+    {
+      "id": "audit_4b9ql7aps",
+      "created_at": "2026-08-06T03:41:13.947Z",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "user_id": "system",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_558e1mcfq",
+      "user_email": "verifier@veloai.com",
+      "details": "User signed in using email/OTP.",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_id": "user_ver",
+      "created_at": "2026-08-05T07:55:56.572Z",
+      "record_id": "user_ver",
+      "client_id": null
+    },
+    {
+      "id": "audit_58i2gojco",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "record_id": "user_rev",
+      "created_at": "2026-08-06T03:19:05.835Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "user_id": "system"
+    },
+    {
+      "id": "audit_5dpewl66x",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-06T03:34:37.907Z",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_rev",
+      "user_email": "system@veloai.com",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_5wypyfa85",
+      "client_id": null,
+      "created_at": "2026-08-05T06:19:36.161Z",
+      "record_id": "user_ops",
+      "details": "User signed in using email/OTP.",
+      "user_id": "user_ops",
+      "user_email": "ops_admin@veloai.com",
+      "action": "USER_LOGIN_SUCCESS"
+    },
+    {
+      "id": "audit_65zdj0prp",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver",
+      "user_id": "system",
+      "created_at": "2026-08-05T16:58:43.487Z"
+    },
+    {
+      "id": "audit_67m2x4q43",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver",
+      "created_at": "2026-08-05T08:14:59.234Z",
+      "user_id": "system",
+      "client_id": null
+    },
+    {
+      "id": "audit_6bput55ke",
+      "created_at": "2026-08-05T16:30:14.244Z",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_rev",
+      "user_email": "system@veloai.com",
+      "client_id": null
+    },
+    {
+      "id": "audit_6tjeh76l0",
+      "record_id": "user_rev",
+      "user_id": "system",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-06T08:40:43.166Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_7di3mpdto",
+      "details": "User signed in using email/OTP.",
+      "record_id": "user_ver",
+      "client_id": null,
+      "action": "USER_LOGIN_SUCCESS",
+      "created_at": "2026-08-05T07:54:01.245Z",
+      "user_email": "verifier@veloai.com",
+      "user_id": "user_ver"
+    },
+    {
+      "id": "audit_7o1hr3zz5",
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "created_at": "2026-08-05T05:58:11.806Z",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver"
+    },
+    {
+      "id": "audit_7ptk5nzkb",
+      "user_email": "system@veloai.com",
+      "record_id": "user_ver",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "user_id": "system",
+      "created_at": "2026-08-06T02:46:52.423Z"
+    },
+    {
+      "id": "audit_7rnhomxt7",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "created_at": "2026-08-12T05:19:09.269Z",
+      "record_id": "user_rev",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_7wrivwpjz",
+      "user_id": "system",
+      "created_at": "2026-08-05T06:45:38.386Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_rev",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null
+    },
+    {
+      "id": "audit_8ba4n5xmm",
+      "user_id": "user_rev",
+      "client_id": null,
+      "record_id": "user_rev",
+      "user_email": "reviewer@veloai.com",
+      "action": "USER_LOGIN_SUCCESS",
+      "created_at": "2026-08-05T06:18:39.235Z",
+      "details": "User signed in using email/OTP."
+    },
+    {
+      "id": "audit_8izv0y37u",
+      "client_id": null,
+      "created_at": "2026-08-12T06:52:36.573Z",
+      "record_id": "user_rev",
+      "user_id": "system",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_8mn1qcnev",
+      "details": "User signed in using email/OTP.",
+      "record_id": "user_rev",
+      "client_id": null,
+      "user_email": "reviewer@veloai.com",
+      "action": "USER_LOGIN_SUCCESS",
+      "created_at": "2026-08-12T11:47:18.341Z",
+      "user_id": "user_rev"
+    },
+    {
+      "id": "audit_8pi973kwp",
+      "user_email": "apc_viewer@veloai.com",
+      "details": "User signed in using email/OTP.",
+      "user_id": "user_client_apc",
+      "action": "USER_LOGIN_SUCCESS",
+      "created_at": "2026-08-05T07:57:15.748Z",
+      "record_id": "user_client_apc",
+      "client_id": "client_apc"
+    },
+    {
+      "id": "audit_8rx2tj66o",
+      "record_id": "user_ver",
+      "created_at": "2026-08-05T07:09:05.795Z",
+      "client_id": null,
+      "user_id": "system",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_9izefrpfa",
+      "user_email": "system@veloai.com",
+      "record_id": "user_ver",
+      "user_id": "system",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-05T06:37:54.925Z"
+    },
+    {
+      "id": "audit_a1lv28gmr",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_rev",
+      "user_id": "system",
+      "created_at": "2026-08-05T06:09:27.894Z",
+      "client_id": null
+    },
+    {
+      "id": "audit_a7c4uc5f7",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-05T06:39:32.031Z",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "user_id": "system",
+      "record_id": "user_ver",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_a9gzmymbj",
+      "user_email": "super_admin@veloai.com",
+      "record_id": "user_super",
+      "client_id": null,
+      "details": "User signed in using email/OTP.",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_id": "user_super",
+      "created_at": "2026-08-11T07:58:40.765Z"
+    },
+    {
+      "id": "audit_aaw15ryyt",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "created_at": "2026-08-05T15:44:17.022Z",
+      "record_id": "user_ver",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_ajatawrc6",
+      "record_id": "user_ver",
+      "user_id": "system",
+      "client_id": null,
+      "created_at": "2026-08-11T07:54:26.108Z",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_ajkgpwl64",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_id": "system",
+      "created_at": "2026-08-05T07:52:37.628Z",
+      "record_id": "user_ver",
+      "client_id": null
+    },
+    {
+      "id": "audit_aubf6yd9t",
+      "record_id": "user_ver",
+      "user_id": "system",
+      "created_at": "2026-08-11T07:58:18.599Z",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_axwt3r5hm",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_ver",
+      "user_id": "system",
+      "created_at": "2026-08-05T06:41:09.660Z"
+    },
+    {
+      "id": "audit_aydpstlad",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-12T05:19:09.270Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_id": "system",
+      "record_id": "user_ver",
+      "user_email": "system@veloai.com",
+      "client_id": null
+    },
+    {
+      "id": "audit_bi01bsnvj",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-05T16:46:25.096Z",
+      "record_id": "user_ver",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_bs7qjkwrd",
+      "record_id": "pat_apc_1",
+      "user_email": "super_admin@veloai.com",
+      "user_id": "user_super",
+      "action": "VIEW_PATIENT_RECORD",
+      "client_id": "client_apc",
+      "details": "Viewed detailed record for patient: John Doe",
+      "created_at": "2026-08-05T11:57:55.068Z"
+    },
+    {
+      "id": "audit_cbv4pxkke",
+      "user_id": "system",
+      "created_at": "2026-08-05T06:41:09.660Z",
+      "client_id": null,
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_csgan5rvq",
+      "created_at": "2026-08-05T08:11:03.633Z",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_ver",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_cwoa6g9le",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "created_at": "2026-08-05T06:28:21.626Z",
+      "user_email": "system@veloai.com",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_czt9j93ar",
+      "created_at": "2026-08-06T12:20:40.732Z",
+      "user_id": "user_super",
+      "action": "USER_LOGIN_SUCCESS",
+      "client_id": null,
+      "record_id": "user_super",
+      "details": "User signed in using email/OTP.",
+      "user_email": "super_admin@veloai.com"
+    },
+    {
+      "id": "audit_d6nv7r255",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-05T13:20:37.937Z",
+      "record_id": "user_ver",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_d76hiwgys",
+      "details": "User signed in using email/OTP.",
+      "created_at": "2026-08-05T06:19:05.568Z",
+      "client_id": null,
+      "action": "USER_LOGIN_SUCCESS",
+      "user_email": "verifier@veloai.com",
+      "record_id": "user_ver",
+      "user_id": "user_ver"
+    },
+    {
+      "id": "audit_dvessdcjz",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-05T15:44:17.021Z",
+      "record_id": "user_rev",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_e46ardwm5",
+      "created_at": "2026-08-06T07:28:45.053Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "client_id": null,
+      "record_id": "user_ver",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_e5iaxhw6t",
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "record_id": "user_ver",
+      "created_at": "2026-08-06T12:20:32.175Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null
+    },
+    {
+      "id": "audit_er27lb14x",
+      "user_email": "system@veloai.com",
+      "user_id": "system",
+      "record_id": "user_ver",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-06T03:17:16.533Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null
+    },
+    {
+      "id": "audit_etwq300ka",
+      "user_id": "system",
+      "created_at": "2026-08-05T08:14:59.232Z",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null
+    },
+    {
+      "id": "audit_ez0voc2i3",
+      "user_id": "user_super",
+      "record_id": "user_super",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_email": "super_admin@veloai.com",
+      "client_id": null,
+      "created_at": "2026-08-04T14:08:29.128Z",
+      "details": "User signed in using email/OTP."
+    },
+    {
+      "id": "audit_ezu52xwe5",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "user_id": "system",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-05T17:00:08.374Z"
+    },
+    {
+      "id": "audit_f37bs7mzg",
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-06T07:28:45.052Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null
+    },
+    {
+      "id": "audit_fen95mtvr",
+      "created_at": "2026-08-04T12:08:17.782Z",
+      "user_id": "user_client_apc",
+      "details": "User signed in using email/OTP.",
+      "record_id": "user_client_apc",
+      "user_email": "apc_viewer@veloai.com",
+      "action": "USER_LOGIN_SUCCESS",
+      "client_id": "client_apc"
+    },
+    {
+      "id": "audit_fo5tqymb5",
+      "created_at": "2026-08-05T06:41:15.418Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver",
+      "client_id": null,
+      "user_id": "system",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_fpi1bg1cg",
+      "record_id": "user_client_apc",
+      "details": "User signed in using email/OTP.",
+      "created_at": "2026-08-05T11:59:49.909Z",
+      "client_id": "client_apc",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_email": "apc_viewer@veloai.com",
+      "user_id": "user_client_apc"
+    },
+    {
+      "id": "audit_fpw3c03nn",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "created_at": "2026-08-05T16:10:59.137Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "record_id": "user_rev"
+    },
+    {
+      "id": "audit_fvmzxs7pg",
+      "client_id": "client_apc",
+      "details": "Promoted appointment status from pending_review to in_verification for patient John Doe",
+      "record_id": "apt_apc_1",
+      "user_email": "super_admin@veloai.com",
+      "created_at": "2026-08-05T11:58:24.715Z",
+      "action": "APPOINTMENT_STAGE_PROMOTED",
+      "user_id": "user_super"
+    },
+    {
+      "id": "audit_gaw9syi42",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_ver",
+      "user_id": "system",
+      "created_at": "2026-08-05T16:59:23.222Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_ggwg0od3s",
+      "user_email": "system@veloai.com",
+      "user_id": "system",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "record_id": "user_rev",
+      "created_at": "2026-08-05T16:59:23.221Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_gpeq0or0i",
+      "client_id": null,
+      "created_at": "2026-08-05T16:43:21.596Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_hfgf0f841",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_ver",
+      "client_id": null,
+      "created_at": "2026-08-12T06:52:36.674Z",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_hni5l19hx",
+      "details": "User signed in using email/OTP.",
+      "user_email": "super_admin@veloai.com",
+      "created_at": "2026-08-05T16:42:25.996Z",
+      "client_id": null,
+      "record_id": "user_super",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_id": "user_super"
+    },
+    {
+      "id": "audit_hvc7th1an",
+      "record_id": "user_client_apc",
+      "details": "User signed in using email/OTP.",
+      "client_id": "client_apc",
+      "created_at": "2026-08-06T07:53:30.961Z",
+      "user_email": "apc_viewer@veloai.com",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_id": "user_client_apc"
+    },
+    {
+      "id": "audit_i81zkeuey",
+      "client_id": "client_apc",
+      "user_email": "apc_viewer@veloai.com",
+      "details": "User signed in using email/OTP.",
+      "record_id": "user_client_apc",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_id": "user_client_apc",
+      "created_at": "2026-08-05T06:20:10.035Z"
+    },
+    {
+      "id": "audit_iagzn1ndz",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "record_id": "user_rev",
+      "created_at": "2026-08-06T03:24:10.920Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null
+    },
+    {
+      "id": "audit_idy20m1w4",
+      "created_at": "2026-08-12T11:44:21.890Z",
+      "client_id": null,
+      "user_id": "system",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_init",
+      "user_id": "user_super",
+      "created_at": "2026-07-30T11:51:17.448Z",
+      "action": "SYSTEM_INITIALIZED",
+      "record_id": "system",
+      "user_email": "super_admin@veloai.com",
+      "details": "InsureTrack B2B application has been seeded and initialized.",
+      "client_id": null
+    },
+    {
+      "id": "audit_ioihrf8un",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_ver",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "created_at": "2026-08-06T08:40:43.166Z"
+    },
+    {
+      "id": "audit_ix7xe0cdd",
+      "record_id": "user_rev",
+      "user_id": "system",
+      "created_at": "2026-08-05T08:11:03.632Z",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_iz5dvk1g9",
+      "client_id": null,
+      "user_email": "reviewer@veloai.com",
+      "details": "User signed in using email/OTP.",
+      "record_id": "user_rev",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_id": "user_rev",
+      "created_at": "2026-08-05T07:55:13.616Z"
+    },
+    {
+      "id": "audit_jgzqygjb0",
+      "client_id": null,
+      "details": "User signed in using email/OTP.",
+      "record_id": "user_super",
+      "user_email": "super_admin@veloai.com",
+      "created_at": "2026-08-06T07:53:50.265Z",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_id": "user_super"
+    },
+    {
+      "id": "audit_jyacdmrdy",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_id": "system",
+      "record_id": "user_rev",
+      "client_id": null,
+      "created_at": "2026-08-12T11:47:17.249Z"
+    },
+    {
+      "id": "audit_k26kbb2ku",
+      "client_id": null,
+      "created_at": "2026-08-12T11:43:06.613Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_ver",
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_k8xnqsbvp",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver",
+      "user_id": "system",
+      "created_at": "2026-08-06T07:49:53.395Z"
+    },
+    {
+      "id": "audit_kvdoab987",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "record_id": "user_ver",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-05T06:39:36.419Z",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_kxbs669j8",
+      "user_email": "super_admin@veloai.com",
+      "user_id": "user_super",
+      "details": "Promoted appointment status from in_verification to in_verification for patient John Doe",
+      "created_at": "2026-08-05T11:58:24.790Z",
+      "client_id": "client_apc",
+      "record_id": "apt_apc_1",
+      "action": "APPOINTMENT_STAGE_PROMOTED"
+    },
+    {
+      "id": "audit_m4qc1fjip",
+      "created_at": "2026-08-05T07:09:05.795Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_rev",
+      "user_id": "system",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_mi04tv5x2",
+      "user_email": "system@veloai.com",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-06T12:20:32.174Z"
+    },
+    {
+      "id": "audit_ndvia0gey",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "user_id": "system",
+      "record_id": "user_ver",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-05T11:30:26.831Z"
+    },
+    {
+      "id": "audit_nlqmno02t",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_ver",
+      "client_id": null,
+      "created_at": "2026-08-05T16:10:59.138Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_nrs3sh815",
+      "user_id": "system",
+      "created_at": "2026-08-06T03:19:05.836Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_nxx7hivb6",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "created_at": "2026-08-05T06:45:38.387Z",
+      "record_id": "user_ver",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "user_id": "system"
+    },
+    {
+      "id": "audit_nyqkhsgli",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_rev",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_id": "system",
+      "created_at": "2026-08-06T02:46:52.423Z"
+    },
+    {
+      "id": "audit_o6jsoqc3z",
+      "created_at": "2026-08-05T16:57:51.601Z",
+      "user_id": "system",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "record_id": "user_ver",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_o97gku790",
+      "user_email": "system@veloai.com",
+      "user_id": "system",
+      "record_id": "user_rev",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-05T08:10:36.141Z"
+    },
+    {
+      "id": "audit_o9dkmplrd",
+      "user_id": "system",
+      "created_at": "2026-08-05T06:39:36.418Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "record_id": "user_rev",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_obontq8k8",
+      "record_id": "user_ver",
+      "details": "User signed in using email/OTP.",
+      "user_email": "verifier@veloai.com",
+      "client_id": null,
+      "created_at": "2026-08-04T12:07:30.853Z",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_id": "user_ver"
+    },
+    {
+      "id": "audit_op2s9n0yw",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_rev",
+      "user_id": "system",
+      "created_at": "2026-08-06T07:23:00.194Z",
+      "client_id": null
+    },
+    {
+      "id": "audit_osrll2pyl",
+      "user_email": "system@veloai.com",
+      "record_id": "user_rev",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-05T11:41:03.581Z"
+    },
+    {
+      "id": "audit_p1nv5xpuf",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "created_at": "2026-08-05T11:41:03.581Z",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "record_id": "user_ver"
+    },
+    {
+      "id": "audit_p1px3c9pq",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-05T06:41:15.418Z",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_pda9qqmfq",
+      "created_at": "2026-08-05T06:28:21.626Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "record_id": "user_ver"
+    },
+    {
+      "id": "audit_pfvzcj6io",
+      "client_id": null,
+      "created_at": "2026-08-05T06:39:32.031Z",
+      "user_id": "system",
+      "record_id": "user_rev",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_pjb8q0vv6",
+      "details": "User signed in using email/OTP.",
+      "action": "USER_LOGIN_SUCCESS",
+      "created_at": "2026-08-05T06:17:03.706Z",
+      "record_id": "user_ops",
+      "user_email": "ops_admin@veloai.com",
+      "user_id": "user_ops",
+      "client_id": null
+    },
+    {
+      "id": "audit_pk1ua7fwv",
+      "client_id": null,
+      "record_id": "user_ops",
+      "user_id": "user_ops",
+      "user_email": "ops_admin@veloai.com",
+      "created_at": "2026-08-05T07:56:33.011Z",
+      "details": "User signed in using email/OTP.",
+      "action": "USER_LOGIN_SUCCESS"
+    },
+    {
+      "id": "audit_pkwm7kuze",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "record_id": "user_ver",
+      "created_at": "2026-08-09T11:26:00.104Z",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_plbhwd5et",
+      "user_id": "user_super",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_email": "super_admin@veloai.com",
+      "client_id": null,
+      "record_id": "user_super",
+      "created_at": "2026-08-06T14:16:42.723Z",
+      "details": "User signed in using email/OTP."
+    },
+    {
+      "id": "audit_px5n20fkk",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "created_at": "2026-08-06T02:54:49.607Z"
+    },
+    {
+      "id": "audit_py2pet279",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-06T14:16:15.553Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_id": "system",
+      "record_id": "user_ver",
+      "client_id": null,
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_pz5cycgcs",
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "created_at": "2026-08-05T11:30:26.731Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_qnsxq6qqo",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-05T06:37:54.925Z",
+      "record_id": "user_rev",
+      "client_id": null,
+      "user_id": "system"
+    },
+    {
+      "id": "audit_r054axp6h",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "created_at": "2026-08-05T16:57:51.600Z",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_rvnser7vg",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "created_at": "2026-08-12T11:42:20.349Z",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_rev"
+    },
+    {
+      "id": "audit_s1b4cpsp5",
+      "client_id": null,
+      "created_at": "2026-08-06T03:17:16.532Z",
+      "user_id": "system",
+      "record_id": "user_rev",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_s2z9ah1lm",
+      "record_id": "user_ver",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "created_at": "2026-08-05T17:09:52.575Z",
+      "user_email": "system@veloai.com",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_s942ngz7j",
+      "client_id": null,
+      "user_id": "user_super",
+      "created_at": "2026-08-05T17:05:46.104Z",
+      "action": "USER_LOGIN_SUCCESS",
+      "record_id": "user_super",
+      "user_email": "super_admin@veloai.com",
+      "details": "User signed in using email/OTP."
+    },
+    {
+      "id": "audit_sn41gyaaa",
+      "user_id": "system",
+      "client_id": null,
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "created_at": "2026-08-05T16:48:29.300Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_soi8emxoh",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "created_at": "2026-08-12T11:42:20.407Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "user_id": "system",
+      "record_id": "user_ver",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_sovim3wgl",
+      "user_id": "system",
+      "created_at": "2026-08-05T16:48:29.300Z",
+      "record_id": "user_ver",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_szt3lsjcy",
+      "record_id": "user_super",
+      "user_email": "super_admin@veloai.com",
+      "client_id": null,
+      "details": "User signed in using email/OTP.",
+      "user_id": "user_super",
+      "action": "USER_LOGIN_SUCCESS",
+      "created_at": "2026-08-05T07:54:30.709Z"
+    },
+    {
+      "id": "audit_t02jmiihe",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver",
+      "created_at": "2026-08-06T03:24:10.921Z",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_t1aipt8n5",
+      "user_id": "system",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "record_id": "user_ver",
+      "created_at": "2026-08-05T17:15:14.196Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null
+    },
+    {
+      "id": "audit_t2k2kc74x",
+      "user_email": "system@veloai.com",
+      "record_id": "user_rev",
+      "client_id": null,
+      "user_id": "system",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-05T05:58:11.806Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_t2ye9s5ai",
+      "details": "User signed in using email/OTP.",
+      "client_id": null,
+      "user_email": "reviewer@veloai.com",
+      "record_id": "user_rev",
+      "created_at": "2026-08-05T07:53:32.790Z",
+      "action": "USER_LOGIN_SUCCESS",
+      "user_id": "user_rev"
+    },
+    {
+      "id": "audit_tehkc5boe",
+      "details": "User signed in using email/OTP.",
+      "action": "USER_LOGIN_SUCCESS",
+      "created_at": "2026-08-05T11:57:35.974Z",
+      "record_id": "user_super",
+      "user_email": "super_admin@veloai.com",
+      "client_id": null,
+      "user_id": "user_super"
+    },
+    {
+      "id": "audit_tnaye7xaw",
+      "created_at": "2026-08-05T06:17:51.194Z",
+      "action": "USER_LOGIN_SUCCESS",
+      "details": "User signed in using email/OTP.",
+      "user_id": "user_super",
+      "record_id": "user_super",
+      "user_email": "super_admin@veloai.com",
+      "client_id": null
+    },
+    {
+      "id": "audit_tq3gdpp7m",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_ver",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "created_at": "2026-08-05T06:09:27.895Z",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_tr3exp88i",
+      "details": "User signed in using email/OTP.",
+      "user_email": "reviewer@veloai.com",
+      "client_id": null,
+      "created_at": "2026-08-04T12:05:59.312Z",
+      "user_id": "user_rev",
+      "record_id": "user_rev",
+      "action": "USER_LOGIN_SUCCESS"
+    },
+    {
+      "id": "audit_trmmizi26",
+      "client_id": null,
+      "created_at": "2026-08-05T16:58:43.487Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "record_id": "user_rev",
+      "user_id": "system",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_tvmgzwu1n",
+      "record_id": "user_ver",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "created_at": "2026-08-05T13:03:04.635Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_u1vn8au4d",
+      "created_at": "2026-08-06T03:34:37.908Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver",
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "client_id": null
+    },
+    {
+      "id": "audit_uad7t7w6a",
+      "record_id": "user_ver",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-06T03:41:13.947Z",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_uhzkcict6",
+      "created_at": "2026-08-06T07:49:53.395Z",
+      "user_id": "system",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_uljxghgcc",
+      "client_id": null,
+      "action": "USER_LOGIN_SUCCESS",
+      "details": "User signed in using email/OTP.",
+      "created_at": "2026-08-06T08:41:06.657Z",
+      "record_id": "user_super",
+      "user_email": "super_admin@veloai.com",
+      "user_id": "user_super"
+    },
+    {
+      "id": "audit_uwlom95w3",
+      "created_at": "2026-08-05T13:20:37.936Z",
+      "record_id": "user_rev",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_uyxfrtj1x",
+      "created_at": "2026-08-11T07:58:18.599Z",
+      "user_id": "system",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_rev"
+    },
+    {
+      "id": "audit_v5rb1oazp",
+      "record_id": "user_rev",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null,
+      "created_at": "2026-08-11T07:54:26.107Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_v7bpt0d71",
+      "user_email": "system@veloai.com",
+      "record_id": "user_ver",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "client_id": null,
+      "user_id": "system",
+      "created_at": "2026-08-05T17:00:08.374Z"
+    },
+    {
+      "id": "audit_vbl5tau8m",
+      "created_at": "2026-08-12T05:17:06.912Z",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_id": "system",
+      "record_id": "user_rev",
+      "client_id": null,
+      "user_email": "system@veloai.com"
+    },
+    {
+      "id": "audit_vqr6zwhri",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "created_at": "2026-08-09T11:25:59.753Z",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_wxnbxseki",
+      "user_email": "system@veloai.com",
+      "user_id": "system",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-05T17:15:13.596Z",
+      "record_id": "user_rev",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS"
+    },
+    {
+      "id": "audit_x1oqhb2nl",
+      "client_id": "client_apc",
+      "user_email": "super_admin@veloai.com",
+      "details": "Viewed detailed record for patient: John Doe",
+      "record_id": "pat_apc_1",
+      "action": "VIEW_PATIENT_RECORD",
+      "user_id": "user_super",
+      "created_at": "2026-08-05T11:57:55.207Z"
+    },
+    {
+      "id": "audit_x4xtpha6w",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_rev",
+      "client_id": null,
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "created_at": "2026-08-06T14:16:15.552Z",
+      "user_email": "system@veloai.com",
+      "user_id": "system"
+    },
+    {
+      "id": "audit_xa4isxqes",
+      "client_id": null,
+      "created_at": "2026-08-05T16:30:14.245Z",
+      "user_id": "system",
+      "record_id": "user_ver",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_y2s3mbljg",
+      "record_id": "user_ver",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_id": "system",
+      "created_at": "2026-08-12T05:17:06.912Z"
+    },
+    {
+      "id": "audit_ysebgns2w",
+      "user_id": "system",
+      "user_email": "system@veloai.com",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver",
+      "created_at": "2026-08-12T11:44:21.891Z",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "client_id": null
+    },
+    {
+      "id": "audit_yu7aen6fk",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "user_id": "system",
+      "created_at": "2026-08-12T11:43:06.612Z",
+      "record_id": "user_rev"
+    },
+    {
+      "id": "audit_z1ax2llfs",
+      "client_id": null,
+      "user_email": "system@veloai.com",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients.",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "record_id": "user_ver",
+      "user_id": "system",
+      "created_at": "2026-08-05T16:43:21.696Z"
+    },
+    {
+      "id": "audit_z7othyn2j",
+      "user_id": "user_super",
+      "user_email": "super_admin@veloai.com",
+      "created_at": "2026-08-05T06:46:07.383Z",
+      "client_id": null,
+      "details": "User signed in using email/OTP.",
+      "action": "USER_LOGIN_SUCCESS",
+      "record_id": "user_super"
+    },
+    {
+      "id": "audit_znf5wqmsg",
+      "action": "MIGRATED_WITH_TEMP_GLOBAL_ACCESS",
+      "user_id": "system",
+      "created_at": "2026-08-12T11:47:17.250Z",
+      "user_email": "system@veloai.com",
+      "client_id": null,
+      "record_id": "user_ver",
+      "details": "User migrated with temporary global access. Please review and narrow assigned clients."
+    },
+    {
+      "id": "audit_ztsf1vype",
+      "user_email": "super_admin@veloai.com",
+      "user_id": "user_super",
+      "record_id": "user_super",
+      "details": "User signed in using email/OTP.",
+      "action": "USER_LOGIN_SUCCESS",
+      "client_id": null,
+      "created_at": "2026-08-04T15:05:42.162Z"
+    }
+  ],
+  "migrations": {
+    "user_access_model_v1": true
+  }
+}
