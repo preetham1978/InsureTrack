@@ -5,3 +5,21 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # Only auto-open PRs for minor and patch updates. Major-version bumps are
+    # breaking changes that need manual testing, so they are ignored here.
+    # GitHub security advisories still open PRs regardless of this filter.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      # Bundle routine minor/patch bumps into a single weekly PR instead of one
+      # PR per package, to reduce review noise.
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
